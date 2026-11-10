@@ -1,0 +1,9 @@
+**/node_modules
+**/.next
+**/ecommerce.db
+**/ecommerce.db-shm
+**/ecommerce.db-wal
+**/.env
+**/.env.*
+.git
+logs.md
