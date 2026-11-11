@@ -307,7 +307,7 @@ export default function ProductDetailPage() {
 
           {product.source && (
             <p className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs leading-relaxed text-amber-900">
-              Product details, images and reviews are sourced from the catalog provider. Price and availability are confirmed again when you place your order.
+              Product specifications are sourced from the listed manufacturer. Prices and stock shown here are illustrative demo values, not live quotes or inventory.
             </p>
           )}
 

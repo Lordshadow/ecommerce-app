@@ -1,0 +1,393 @@
+{
+  "dataset": "ApexStore curated computer catalog",
+  "version": "2026-11-11",
+  "currency": "INR",
+  "attribution": "Product descriptions and specifications are curated from the manufacturers' official product pages and specification documents listed on each product.",
+  "listing_note": "Prices and stock quantities are illustrative demo listing values, not manufacturer quotes or live inventory.",
+  "products": [
+    {
+      "source_ref": "lenovo-loq-83dv01b9in",
+      "source": "Lenovo India / PSREF; demo price and stock",
+      "source_url": "https://psref.lenovo.com/Detail/2371?M=83DV01B9IN",
+      "title": "Lenovo LOQ 15IRX9 (83DV01B9IN)",
+      "description": "A 15.6-inch gaming and creator laptop configured with a 13th Gen Intel Core i5-13450HX, GeForce RTX 3050A 4GB graphics, 16GB DDR5 memory, and a 512GB PCIe 4.0 NVMe SSD. The 144Hz FHD IPS display and upgradeable SO-DIMM and M.2 slots make this configuration a practical entry point for gaming, coursework, and content work. Configuration is SKU-specific; check the model code before comparing variants.",
+      "brand": "Lenovo",
+      "category": "Laptops",
+      "currency": "INR",
+      "price": 130991,
+      "original_price": 130991,
+      "rating": 0,
+      "reviews_count": 0,
+      "stock": 8,
+      "image": "https://p1-ofp.static.pub/medias/26050595576_LOQ15IRX9WHBKLTLunaGreyIMG_202309261024281734344352040.png",
+      "images": ["https://p1-ofp.static.pub/medias/26050595576_LOQ15IRX9WHBKLTLunaGreyIMG_202309261024281734344352040.png"],
+      "features": ["Intel Core i5-13450HX", "NVIDIA GeForce RTX 3050A 4GB", "15.6-inch FHD IPS 144Hz display", "16GB DDR5 and 512GB PCIe 4.0 SSD", "Two SO-DIMM slots and two M.2 SSD slots"],
+      "specifications": [
+        {"label":"Manufacturer model","value":"83DV01B9IN"}, {"label":"Processor","value":"Intel Core i5-13450HX, 10 cores (6P+4E), up to 4.6GHz"},
+        {"label":"Graphics","value":"NVIDIA GeForce RTX 3050A Laptop GPU, 4GB GDDR6, 65W"}, {"label":"Memory","value":"16GB DDR5-4800 SO-DIMM; one module installed"},
+        {"label":"Storage","value":"512GB M.2 2242 PCIe 4.0 x4 NVMe SSD"}, {"label":"Display","value":"15.6-inch FHD IPS, 1920x1080, 144Hz, 300 nits, 100% sRGB"},
+        {"label":"Battery","value":"60Wh"}, {"label":"Operating system","value":"Windows 11 Home Single Language"},
+        {"label":"Wireless","value":"Wi-Fi 6 and Bluetooth 5.1 or later"}, {"label":"Warranty","value":"Lenovo India SKU listing shows 1-year onsite warranty; verify coverage by serial number"},
+        {"label":"Upgrade options","value":"Two SO-DIMM slots and two M.2 PCIe 4.0 SSD slots"}
+      ],
+      "faqs": [
+        {"question":"Is this suitable for gaming?","answer":"It combines an Intel Core i5-13450HX with an RTX 3050A Laptop GPU and a 144Hz FHD screen. Game performance depends on the title, settings, and power mode."},
+        {"question":"Can I upgrade its RAM or storage?","answer":"The LOQ 15IRX9 platform has two SO-DIMM slots and two M.2 PCIe 4.0 SSD slots. Check the exact SKU and Lenovo maintenance guide before buying parts."},
+        {"question":"Does it include Windows?","answer":"This model code is listed with Windows 11 Home Single Language."},
+        {"question":"Which display configuration is this?","answer":"The 83DV01B9IN listing is a 15.6-inch FHD IPS 144Hz panel. Other LOQ 15IRX9 SKUs can have different displays and components."}
+      ],
+      "tags": ["laptop", "gaming", "lenovo", "intel", "geforce"]
+    },
+    {
+      "source_ref": "acer-nitro-v15-nhqpgsi001",
+      "source": "Acer India official specifications; demo price and stock",
+      "source_url": "https://www.acer.com/in-en/laptops/nitro/nitro-v-15/pdp/NH.QPGSI.001",
+      "title": "Acer Nitro V 15 (ANV15-41-R9L7)",
+      "description": "A 15.6-inch gaming notebook with AMD Ryzen 5 7535HS, NVIDIA GeForce RTX 2050 4GB graphics, 8GB DDR5, and a 512GB NVMe SSD. Its matte FHD IPS panel runs at 144Hz, and the chassis includes USB4, HDMI, Ethernet, and Wi-Fi 6. The official Acer India specification page lists this exact part as NH.QPGSI.001; memory and graphics differ across Nitro V configurations.",
+      "brand": "Acer",
+      "category": "Laptops",
+      "currency": "INR",
+      "price": 69990,
+      "original_price": 69990,
+      "rating": 0,
+      "reviews_count": 0,
+      "stock": 8,
+      "image": "https://cdn.shopify.com/s/files/1/0355/8296/7943/files/01_eb5a59fe-c7ec-49d5-849d-cd5df2f005f4.jpg?v=1719541246",
+      "images": ["https://cdn.shopify.com/s/files/1/0355/8296/7943/files/01_eb5a59fe-c7ec-49d5-849d-cd5df2f005f4.jpg?v=1719541246"],
+      "features": ["AMD Ryzen 5 7535HS six-core processor", "GeForce RTX 2050 Laptop GPU with 4GB GDDR6", "15.6-inch FHD IPS 144Hz matte display", "8GB DDR5 memory and 512GB PCIe NVMe SSD", "USB4, HDMI, Gigabit Ethernet, and Wi-Fi 6"],
+      "specifications": [
+        {"label":"Part number","value":"NH.QPGSI.001"}, {"label":"Processor","value":"AMD Ryzen 5 7535HS, 6 cores, 3.3GHz base"},
+        {"label":"Graphics","value":"NVIDIA GeForce RTX 2050 Laptop GPU, 4GB GDDR6, up to 65W"}, {"label":"Memory","value":"8GB DDR5; maximum supported memory 32GB"},
+        {"label":"Storage","value":"512GB M.2 PCIe NVMe SSD"}, {"label":"Display","value":"15.6-inch FHD IPS matte, 1920x1080, 144Hz, 45% NTSC"},
+        {"label":"Battery","value":"59Wh lithium-polymer"}, {"label":"Ports","value":"USB4, three USB-A, HDMI, Gigabit Ethernet, and headset combo"},
+        {"label":"Wireless","value":"Wi-Fi 6 (802.11ax), Bluetooth 5.1 or later"}, {"label":"Weight","value":"Approximately 2.10kg"},
+        {"label":"In the box","value":"Notebook, lithium-polymer battery, AC adapter, and power cord"}
+      ],
+      "faqs": [
+        {"question":"How much memory is installed and can it be expanded?","answer":"This exact listing has 8GB DDR5 installed and Acer specifies support for up to 32GB. Confirm the slot layout with Acer before purchasing an upgrade."},
+        {"question":"Does the RTX 2050 have dedicated memory?","answer":"Yes. Acer lists 4GB of dedicated GDDR6 graphics memory for this configuration."},
+        {"question":"Is the screen high refresh rate?","answer":"Yes. The FHD IPS matte display is specified at 144Hz."},
+        {"question":"Does this model have USB4 and wired network?","answer":"Acer lists one USB4 port and Gigabit Ethernet, along with HDMI and USB-A ports."}
+      ],
+      "tags": ["laptop", "gaming", "acer", "amd", "geforce"]
+    },
+    {
+      "source_ref": "amd-ryzen-5-7600-100100001015box",
+      "source": "AMD official product specifications; demo price and stock",
+      "source_url": "https://www.amd.com/en/products/processors/desktops/ryzen/7000-series/amd-ryzen-5-7600.html",
+      "title": "AMD Ryzen 5 7600 Desktop Processor (AM5)",
+      "description": "A 6-core, 12-thread Zen 4 desktop processor for the AM5 platform. It boosts up to 5.1GHz, has a 65W default TDP, supports DDR5, and includes Radeon integrated graphics and a Wraith Stealth thermal solution in the boxed SKU. A compatible AM5 motherboard and DDR5 memory are required; cooler and graphics behavior depend on the exact package and system configuration.",
+      "brand": "AMD",
+      "category": "PC Components",
+      "currency": "INR",
+      "price": 19490,
+      "original_price": 19490,
+      "rating": 0,
+      "reviews_count": 0,
+      "stock": 12,
+      "image": "https://csdam.net/digitalcontent/0/5160/51607291.jpg",
+      "images": ["https://csdam.net/digitalcontent/0/5160/51607291.jpg"],
+      "features": ["6 cores and 12 threads", "Up to 5.1GHz boost", "65W default TDP", "AM5 socket with DDR5 support", "Integrated Radeon graphics and boxed Wraith Stealth cooler"],
+      "specifications": [
+        {"label":"Model","value":"Ryzen 5 7600"}, {"label":"Architecture","value":"Zen 4 (Raphael)"},
+        {"label":"Cores / threads","value":"6 cores / 12 threads"}, {"label":"Base / max boost","value":"3.8GHz / up to 5.1GHz"},
+        {"label":"Cache","value":"6MB L2 and 32MB L3"}, {"label":"Default TDP","value":"65W"},
+        {"label":"Socket","value":"AM5"}, {"label":"Memory","value":"DDR5, dual channel; supported speed depends on DIMM configuration"},
+        {"label":"Integrated graphics","value":"AMD Radeon Graphics, 2 graphics cores, up to 2200MHz"}, {"label":"Thermal solution","value":"AMD Wraith Stealth included with boxed processor"},
+        {"label":"Boxed product ID","value":"100-100001015BOX"}
+      ],
+      "faqs": [
+        {"question":"What motherboard socket does it use?","answer":"The Ryzen 5 7600 uses AMD Socket AM5. Check the motherboard CPU support list and BIOS version before installation."},
+        {"question":"Does it include a cooler?","answer":"AMD lists the Wraith Stealth thermal solution with the boxed processor. Tray/OEM packages may differ."},
+        {"question":"Can it run without a graphics card?","answer":"It includes basic Radeon integrated graphics, so a discrete GPU is not required for display output when the motherboard has a supported display connector."},
+        {"question":"Does it use DDR4 memory?","answer":"No. The AM5 Ryzen 5 7600 platform uses DDR5 memory."}
+      ],
+      "tags": ["processor", "cpu", "amd", "ryzen", "am5"]
+    },
+    {
+      "source_ref": "intel-core-i5-14600k-bx8071514600k",
+      "source": "Intel ARK official specifications; demo price and stock",
+      "source_url": "https://www.intel.com/content/www/us/en/products/sku/236799/intel-core-i5-processor-14600k-24m-cache-up-to-5-30-ghz/specifications.html",
+      "title": "Intel Core i5-14600K Desktop Processor",
+      "description": "An unlocked 14th Gen desktop CPU with 14 cores (6 Performance-cores plus 8 Efficient-cores), 20 threads, and up to 5.3GHz turbo frequency. Intel specifies 125W processor base power and 181W maximum turbo power. It uses the LGA1700 socket, supports DDR4 or DDR5 depending on the motherboard, and includes Intel UHD Graphics 770; a suitable cooler is required and is not included with the boxed K SKU.",
+      "brand": "Intel",
+      "category": "PC Components",
+      "currency": "INR",
+      "price": 28990,
+      "original_price": 28990,
+      "rating": 0,
+      "reviews_count": 0,
+      "stock": 10,
+      "image": "https://images.unsplash.com/photo-1555617981-dac3880eac6e?w=800&q=80",
+      "images": ["https://images.unsplash.com/photo-1555617981-dac3880eac6e?w=800&q=80"],
+      "features": ["14 cores: 6 Performance and 8 Efficient cores", "20 threads", "Up to 5.3GHz max turbo", "LGA1700 socket", "Intel UHD Graphics 770 integrated graphics"],
+      "specifications": [
+        {"label":"Processor number","value":"Core i5-14600K"}, {"label":"Generation","value":"14th Gen Intel Core (Raptor Lake Refresh)"},
+        {"label":"Cores / threads","value":"14 (6P+8E) / 20"}, {"label":"Max turbo frequency","value":"5.3GHz"},
+        {"label":"Cache","value":"24MB Intel Smart Cache"}, {"label":"Processor base / max turbo power","value":"125W / 181W"},
+        {"label":"Socket","value":"FCLGA1700"}, {"label":"Memory","value":"Up to DDR5-5600 or DDR4-3200; motherboard determines memory type"},
+        {"label":"Integrated graphics","value":"Intel UHD Graphics 770"}, {"label":"Thermal solution","value":"No included thermal solution; choose a cooler rated for system power"}
+      ],
+      "faqs": [
+        {"question":"Which socket does the Core i5-14600K use?","answer":"It uses Intel FCLGA1700. Check the motherboard CPU support list and BIOS version for this exact processor."},
+        {"question":"Can it use DDR4 memory?","answer":"The processor supports DDR4-3200 and DDR5-5600, but a motherboard supports one memory type, not both."},
+        {"question":"Does it have integrated graphics?","answer":"Yes. Intel specifies UHD Graphics 770."},
+        {"question":"Is a CPU cooler included?","answer":"Intel lists no thermal solution for this boxed K processor. Purchase a compatible cooler separately."}
+      ],
+      "tags": ["processor", "cpu", "intel", "core-i5", "lga1700"]
+    },
+    {
+      "source_ref": "asus-dual-rtx4060-o8g",
+      "source": "ASUS India official specifications; demo price and stock",
+      "source_url": "https://www.asus.com/in/motherboards-components/graphics-cards/dual/dual-rtx4060-o8g/techspec/",
+      "title": "ASUS Dual GeForce RTX 4060 OC Edition 8GB",
+      "description": "A compact, factory-overclocked GeForce RTX 4060 graphics card with 8GB GDDR6 memory and a 2.5-slot dual-fan cooler. ASUS specifies a 2535MHz OC-mode clock, one HDMI 2.1a output, three DisplayPort 1.4a outputs, one 8-pin power connector, and a recommended 550W PSU. Check case clearance and power-supply connectors before upgrading.",
+      "brand": "ASUS",
+      "category": "PC Components",
+      "currency": "INR",
+      "price": 32990,
+      "original_price": 32990,
+      "rating": 0,
+      "reviews_count": 0,
+      "stock": 8,
+      "image": "https://cdn2.cellphones.com.vn/x/media/catalog/product/v/g/vga-asus-dual-rtx-4060-oc-8gb-gaming-gddr6_1_.png",
+      "images": ["https://cdn2.cellphones.com.vn/x/media/catalog/product/v/g/vga-asus-dual-rtx-4060-oc-8gb-gaming-gddr6_1_.png"],
+      "features": ["NVIDIA GeForce RTX 4060 GPU", "8GB GDDR6 on a 128-bit interface", "2535MHz OC-mode boost clock", "Two Axial-tech fans and 2.5-slot cooler", "One HDMI 2.1a and three DisplayPort 1.4a outputs"],
+      "specifications": [
+        {"label":"Model","value":"DUAL-RTX4060-O8G"}, {"label":"GPU","value":"NVIDIA GeForce RTX 4060"},
+        {"label":"CUDA cores","value":"3072"}, {"label":"Memory","value":"8GB GDDR6, 128-bit, 17Gbps"},
+        {"label":"Boost clock","value":"2505MHz default; 2535MHz OC mode"}, {"label":"Interface","value":"PCI Express 4.0"},
+        {"label":"Outputs","value":"1x HDMI 2.1a and 3x DisplayPort 1.4a; up to 4 displays"}, {"label":"Card dimensions","value":"227.2 x 123.24 x 49.6mm; 2.5 slots"},
+        {"label":"Power connector","value":"1x 8-pin"}, {"label":"Recommended PSU","value":"550W"}
+      ],
+      "faqs": [
+        {"question":"How much video memory does this card have?","answer":"This ASUS model has 8GB of GDDR6 memory on a 128-bit interface."},
+        {"question":"Will it fit in my case?","answer":"The card is 227.2mm long and 2.5 slots thick. Compare those measurements with your case clearance and adjacent expansion slots."},
+        {"question":"What power supply does ASUS recommend?","answer":"ASUS recommends a 550W PSU for a complete system and specifies one 8-pin power connector. Actual needs depend on the rest of the PC."},
+        {"question":"How many displays can it connect?","answer":"ASUS lists one HDMI 2.1a and three DisplayPort 1.4a outputs and support for up to four displays."}
+      ],
+      "tags": ["graphics-card", "gpu", "asus", "nvidia", "rtx-4060"]
+    },
+    {
+      "source_ref": "samsung-990-evo-plus-4tb-mzv9s4t0bw",
+      "source": "Samsung India / Samsung Semiconductor official specifications; demo price and stock",
+      "source_url": "https://www.samsung.com/in/memory-storage/nvme-ssd/990-evo-plus-4tb-nvme-pcie-gen-4-mz-v9s4t0bw/",
+      "title": "Samsung 990 EVO Plus 4TB NVMe SSD (MZ-V9S4T0BW)",
+      "description": "A 4TB M.2 2280 NVMe solid-state drive for client PCs. Samsung specifies a PCIe 4.0 x4 / PCIe 5.0 x2 interface, sequential reads up to 7,250MB/s, sequential writes up to 6,300MB/s, and a five-year limited warranty or 2,400TBW limit. Confirm your motherboard's M.2 slot support and heatsink requirements before installation.",
+      "brand": "Samsung",
+      "category": "PC Components",
+      "currency": "INR",
+      "price": 28990,
+      "original_price": 28990,
+      "rating": 0,
+      "reviews_count": 0,
+      "stock": 10,
+      "image": "https://images.unsplash.com/photo-1597872200969-2b65d56bd16b?w=800&q=80",
+      "images": ["https://images.unsplash.com/photo-1597872200969-2b65d56bd16b?w=800&q=80"],
+      "features": ["4TB capacity", "M.2 2280 form factor", "PCIe 4.0 x4 / PCIe 5.0 x2 NVMe 2.0", "Up to 7,250MB/s read and 6,300MB/s write", "Five-year limited warranty or 2,400TBW"],
+      "specifications": [
+        {"label":"Model code","value":"MZ-V9S4T0BW"}, {"label":"Capacity","value":"4TB (usable capacity is lower after formatting)"},
+        {"label":"Form factor","value":"M.2 2280"}, {"label":"Interface","value":"PCIe 4.0 x4 / PCIe 5.0 x2, NVMe 2.0"},
+        {"label":"Sequential read","value":"Up to 7,250MB/s, depending on host system"}, {"label":"Sequential write","value":"Up to 6,300MB/s, depending on host system"},
+        {"label":"NAND","value":"Samsung V-NAND TLC"}, {"label":"Warranty","value":"Five-year limited warranty or 2,400TBW, whichever comes first"}
+      ],
+      "faqs": [
+        {"question":"Will it work in any M.2 slot?","answer":"It is an M.2 2280 NVMe drive. The host must support NVMe over PCIe; check the motherboard or laptop manual for slot size and supported PCIe generations."},
+        {"question":"Are the advertised speeds guaranteed?","answer":"No. Samsung labels them up to 7,250MB/s read and 6,300MB/s write; actual performance depends on the host system and workload."},
+        {"question":"What is the warranty?","answer":"Samsung specifies a five-year limited warranty or 2,400TBW, whichever occurs first, subject to its terms."},
+        {"question":"Does the drive include a heatsink?","answer":"The listed MZ-V9S4T0BW model is the bare M.2 drive. Check the package and motherboard heatsink options before installation."}
+      ],
+      "tags": ["ssd", "storage", "nvme", "samsung", "m2"]
+    },
+    {
+      "source_ref": "msi-mag-b650-tomahawk-wifi",
+      "source": "MSI official specifications; demo price and stock",
+      "source_url": "https://us.msi.com/Motherboard/MAG-B650-TOMAHAWK-WIFI/Specification",
+      "title": "MSI MAG B650 TOMAHAWK WIFI Motherboard",
+      "description": "An ATX AM5 motherboard built around AMD B650 for Ryzen 7000, 8000, and 9000 desktop processors. It has four DDR5 DIMM slots, three PCIe 4.0 x4 M.2 slots, six SATA ports, Wi-Fi 6E, Bluetooth, and 2.5Gb Ethernet. CPU and memory compatibility depend on the installed processor, BIOS, and memory kit; check MSI's support list before assembling a system.",
+      "brand": "MSI",
+      "category": "PC Components",
+      "currency": "INR",
+      "price": 21990,
+      "original_price": 21990,
+      "rating": 0,
+      "reviews_count": 0,
+      "stock": 8,
+      "image": "https://images.unsplash.com/photo-1555617981-dac3880eac6e?w=800&q=80",
+      "images": ["https://images.unsplash.com/photo-1555617981-dac3880eac6e?w=800&q=80"],
+      "features": ["AMD AM5 socket and B650 chipset", "Four DDR5 DIMM slots", "Three PCIe 4.0 x4 M.2 slots and six SATA ports", "Wi-Fi 6E and Bluetooth", "2.5Gbps LAN"],
+      "specifications": [
+        {"label":"Form factor","value":"ATX, 243.84 x 304.8mm"}, {"label":"Socket / chipset","value":"AMD AM5 / AMD B650"},
+        {"label":"CPU support","value":"AMD Ryzen 9000, 8000, and 7000 series desktop processors; BIOS support varies"}, {"label":"Memory","value":"Four DDR5 DIMM slots, dual channel, up to 256GB; OC speeds depend on CPU and DIMMs"},
+        {"label":"Expansion","value":"Two PCIe 4.0 x16-length slots and one PCIe 3.0 x1 slot"}, {"label":"Storage","value":"Three PCIe 4.0 x4 M.2 slots and six SATA 6Gb/s ports"},
+        {"label":"Networking","value":"Wi-Fi 6E, Bluetooth 5.3, and 2.5Gbps LAN"}, {"label":"Rear display outputs","value":"HDMI 2.1 and DisplayPort 1.4; require a processor with integrated graphics"},
+        {"label":"OS support","value":"Windows 10 64-bit and Windows 11 64-bit"}
+      ],
+      "faqs": [
+        {"question":"Which processors are supported?","answer":"MSI lists Ryzen 7000, 8000, and 9000 series desktop CPUs. Check the CPU support page for the exact model and minimum BIOS version."},
+        {"question":"Does it support DDR4?","answer":"No. This board uses DDR5 DIMMs."},
+        {"question":"How many M.2 SSDs can I install?","answer":"It has three PCIe 4.0 x4 M.2 slots. Slot sharing and availability can depend on the processor; consult the manual for lane-sharing details."},
+        {"question":"Can the motherboard HDMI output work with any CPU?","answer":"No. MSI notes that HDMI and DisplayPort output require a processor with integrated graphics."}
+      ],
+      "tags": ["motherboard", "msi", "am5", "b650", "ddr5"]
+    },
+    {
+      "source_ref": "kingston-fury-beast-kf560c36bbek2-32",
+      "source": "Kingston official specifications; demo price and stock",
+      "source_url": "https://www.kingston.com/en/memory/search/discontinuedmodels?partid=kf560c36bbek2-32",
+      "title": "Kingston FURY Beast 32GB DDR5-6000 Kit (2x16GB)",
+      "description": "A matched 32GB desktop memory kit made from two 16GB DDR5-6000 DIMMs with CL36 timing. Kingston lists AMD EXPO and Intel XMP 3.0 profiles, non-ECC unbuffered operation, and a 288-pin DIMM form factor. The listed part number has been replaced by a newer Kingston part; check the exact kit and motherboard QVL, and note that this SKU is marked discontinued by Kingston.",
+      "brand": "Kingston",
+      "category": "PC Components",
+      "currency": "INR",
+      "price": 8990,
+      "original_price": 8990,
+      "rating": 0,
+      "reviews_count": 0,
+      "stock": 6,
+      "image": "https://images.unsplash.com/photo-1562976540-1502c2145186?w=800&q=80",
+      "images": ["https://images.unsplash.com/photo-1562976540-1502c2145186?w=800&q=80"],
+      "features": ["32GB kit: 2x16GB DDR5", "DDR5-6000 CL36 profile", "AMD EXPO and Intel XMP 3.0 profiles", "288-pin desktop UDIMM", "Non-ECC unbuffered memory"],
+      "specifications": [
+        {"label":"Part number","value":"KF560C36BBEK2-32"}, {"label":"Kit capacity","value":"32GB (2x16GB)"},
+        {"label":"Memory type","value":"DDR5 desktop UDIMM, 288-pin, non-ECC unbuffered"}, {"label":"Rated profile","value":"DDR5-6000, CL36-38-38, 1.35V"},
+        {"label":"Profiles","value":"AMD EXPO 1.0 and Intel XMP 3.0"}, {"label":"Height","value":"34.9mm with heat spreader"},
+        {"label":"Availability note","value":"Kingston marks this part number discontinued and lists KF560C36BBE2K2-32 as its replacement"}
+      ],
+      "faqs": [
+        {"question":"Is this laptop memory?","answer":"No. It is a 288-pin desktop UDIMM kit and does not fit laptop SO-DIMM slots."},
+        {"question":"Can I run it at 6000MT/s automatically?","answer":"6000MT/s is an overclocked EXPO/XMP profile. Actual supported speed depends on the CPU, motherboard, BIOS, and memory configuration."},
+        {"question":"Is this kit compatible with AM5 and Intel systems?","answer":"The kit includes AMD EXPO and Intel XMP 3.0 profiles, but compatibility and stable speeds should be checked against the exact motherboard QVL."},
+        {"question":"Is this exact part still current?","answer":"Kingston marks KF560C36BBEK2-32 discontinued and lists KF560C36BBE2K2-32 as the replacement. Confirm the exact part number before checkout."}
+      ],
+      "tags": ["memory", "ram", "kingston", "ddr5", "desktop"]
+    },
+    {
+      "source_ref": "corsair-4000d-airflow-cc9011200ww",
+      "source": "Corsair official model and support references; demo price and stock",
+      "source_url": "https://help.corsair.com/hc/en-us/articles/360047191592-Cases-CORSAIR-mid-tower-cases",
+      "title": "Corsair 4000D Airflow Tempered Glass Mid-Tower Case",
+      "description": "A black mid-tower PC chassis with a high-airflow front panel, tempered-glass side panel, and support for standard ATX, Micro-ATX, and Mini-ITX builds. Corsair lists model CC-9011200-WW; the 4000D Airflow family measures 453 x 230 x 466mm and supports multiple 120mm/140mm fans and radiators. Check the full manual for GPU, cooler, and radiator clearances before choosing components.",
+      "brand": "Corsair",
+      "category": "PC Components",
+      "currency": "INR",
+      "price": 7990,
+      "original_price": 7990,
+      "rating": 0,
+      "reviews_count": 0,
+      "stock": 8,
+      "image": "https://images.unsplash.com/photo-1587202372775-e229f172b9d7?w=800&q=80",
+      "images": ["https://images.unsplash.com/photo-1587202372775-e229f172b9d7?w=800&q=80"],
+      "features": ["High-airflow front panel", "Tempered-glass side panel", "Mid-tower format", "Supports ATX, Micro-ATX, and Mini-ITX builds", "Fan and radiator mounting positions"],
+      "specifications": [
+        {"label":"Model / part number","value":"4000D Airflow / CC-9011200-WW (black)"}, {"label":"Dimensions","value":"453 x 230 x 466mm"},
+        {"label":"Case type","value":"Mid-tower"}, {"label":"Side panel","value":"Tempered glass"},
+        {"label":"Front fan capacity","value":"Up to 3x 120mm or 2x 140mm"}, {"label":"Included fans","value":"Two 120mm AirGuide fans"},
+        {"label":"Rear fan capacity","value":"Up to 1x 120mm"},
+        {"label":"Drive trays","value":"Two SSD trays"}, {"label":"Compatibility","value":"Check current Corsair manual for motherboard, GPU, radiator, and cooler clearance"}
+      ],
+      "faqs": [
+        {"question":"Which motherboard sizes does it support?","answer":"Corsair positions the 4000D Airflow as a mid-tower for standard PC builds; verify the latest manual for exact motherboard and standoff support."},
+        {"question":"How many fans are included?","answer":"Corsair's 4000 Series launch information lists two 120mm AirGuide fans included with the 4000D Airflow."},
+        {"question":"Will my graphics card fit?","answer":"Check your GPU length and thickness against the case manual, including any front radiator or fan installed."},
+        {"question":"Does the case include a power supply?","answer":"No PSU is listed as included in the 4000D Airflow case specification; buy a separate compatible power supply."}
+      ],
+      "tags": ["pc-case", "corsair", "airflow", "mid-tower", "pc-building"]
+    },
+    {
+      "source_ref": "logitech-mx-master-3s-910006561",
+      "source": "Logitech India official product details; demo price and stock",
+      "source_url": "https://www.logitech.com/en-in/shop/p/mx-master-3s.910-006561",
+      "title": "Logitech MX Master 3S Wireless Mouse (Graphite)",
+      "description": "A rechargeable productivity mouse with Logitech's 8,000 DPI optical sensor, Quiet Clicks, and MagSpeed electromagnetic scrolling. Logitech says the sensor can track on glass at least 4mm thick and the scroll wheel can move up to 1,000 lines per second. Button and app-specific customization through Logi Options+ is available on supported Windows and macOS systems.",
+      "brand": "Logitech",
+      "category": "Peripherals",
+      "currency": "INR",
+      "price": 10995,
+      "original_price": 10995,
+      "rating": 0,
+      "reviews_count": 0,
+      "stock": 10,
+      "image": "https://resource.logitech.com/w_544%2Ch_466%2Car_7%3A6%2Cc_pad%2Cq_auto%2Cf_auto%2Cdpr_1.0/d_transparent.gif/content/dam/logitech/en/products/mice/mx-master-3s/migration-assets-for-delorean-2025/gallery/mx-master-3s-top-view-graphite.png",
+      "images": ["https://resource.logitech.com/w_544%2Ch_466%2Car_7%3A6%2Cc_pad%2Cq_auto%2Cf_auto%2Cdpr_1.0/d_transparent.gif/content/dam/logitech/en/products/mice/mx-master-3s/migration-assets-for-delorean-2025/gallery/mx-master-3s-top-view-graphite.png"],
+      "features": ["8,000 DPI optical tracking", "Quiet Clicks", "MagSpeed electromagnetic scroll wheel", "USB-C rechargeable", "Logi Options+ customization on supported Windows/macOS"],
+      "specifications": [
+        {"label":"Model / part number","value":"MX Master 3S / 910-006561"}, {"label":"Sensor","value":"Optical, adjustable up to 8,000 DPI"},
+        {"label":"Glass tracking","value":"Tracks on glass at least 4mm thick"}, {"label":"Scroll wheel","value":"MagSpeed electromagnetic; up to 1,000 lines per second"},
+        {"label":"Click noise","value":"Quiet Clicks; Logitech states 90% less click noise compared with MX Master 3"}, {"label":"Color","value":"Graphite"},
+        {"label":"Software","value":"Logi Options+ on supported Windows and macOS systems"}
+      ],
+      "faqs": [
+        {"question":"Can it track on glass?","answer":"Logitech specifies glass tracking on surfaces at least 4mm thick."},
+        {"question":"Can I change the button behavior?","answer":"Yes. Logi Options+ supports button customization and app-specific settings on supported Windows and macOS versions."},
+        {"question":"Is this mouse silent?","answer":"It has Quiet Clicks. Logitech states 90% less click noise than the MX Master 3; it is quieter, not silent."},
+        {"question":"How fast is the scroll wheel?","answer":"Logitech lists MagSpeed electromagnetic scrolling at up to 1,000 lines per second."}
+      ],
+      "tags": ["mouse", "logitech", "wireless", "productivity", "peripheral"]
+    },
+    {
+      "source_ref": "kingston-datatraveler-exodia-s-dtxs64gb",
+      "source": "Kingston official product specification; demo price and stock",
+      "source_url": "https://www.kingston.com/en/usb-flash-drives/datatraveler-exodia-s-swivel-usb-3-2-usb-flash-drive",
+      "title": "Kingston DataTraveler Exodia S 64GB USB Flash Drive",
+      "description": "A compact 64GB USB-A flash drive for moving files between laptops, desktops, and other compatible devices. Kingston specifies USB 3.2 Gen 1, a swivel cap, an 8.72g weight, and a five-year warranty. Advertised capacity is nominal; formatting and system files reduce the available storage. Transfer speeds depend on both the drive and host device.",
+      "brand": "Kingston",
+      "category": "Peripherals",
+      "currency": "INR",
+      "price": 699,
+      "original_price": 699,
+      "rating": 0,
+      "reviews_count": 0,
+      "stock": 20,
+      "image": "https://media.kingston.com/kingston/highlights/ktc-highlights-flash-usb-dtxs-hl1.webp",
+      "images": ["https://media.kingston.com/kingston/highlights/ktc-highlights-flash-usb-dtxs-hl1.webp"],
+      "features": ["64GB nominal capacity", "USB 3.2 Gen 1", "Swivel cap protects the connector", "8.72g lightweight design", "Five-year warranty with technical support"],
+      "specifications": [
+        {"label":"Part number","value":"DTXS/64GB"}, {"label":"Capacity","value":"64GB nominal; available formatted capacity is lower"},
+        {"label":"Interface","value":"USB 3.2 Gen 1, USB-A"}, {"label":"Dimensions","value":"57 x 19 x 11.8mm"},
+        {"label":"Weight","value":"8.72g"}, {"label":"Design","value":"Swivel cap"},
+        {"label":"Compatibility","value":"Windows 11, macOS, Linux, and ChromeOS; check current OS version support"},
+        {"label":"Warranty","value":"Five-year warranty with free technical support"}
+      ],
+      "faqs": [
+        {"question":"Will the full 64GB be available for files?","answer":"No. Kingston notes that formatting and other functions use some capacity, so usable space is lower than the nominal 64GB."},
+        {"question":"Does it need a cable?","answer":"No cable is needed; this model has a USB-A connector. The host computer needs a compatible USB-A port or adapter."},
+        {"question":"Does it have a cap?","answer":"It uses a swivel cap that rotates over the USB connector."},
+        {"question":"What warranty does Kingston list?","answer":"Kingston lists a five-year warranty with free technical support."}
+      ],
+      "tags": ["usb-drive", "flash-storage", "kingston", "64gb", "peripheral"]
+    },
+    {
+      "source_ref": "tp-link-tl-wn725n-wireless-nano-adapter",
+      "source": "TP-Link official product specifications; demo price and stock",
+      "source_url": "https://www.tp-link.com/us/home-networking/usb-adapter/tl-wn725n/",
+      "title": "TP-Link TL-WN725N 150Mbps Wireless N Nano USB Adapter",
+      "description": "A miniature USB 2.0 Wi-Fi adapter for adding 2.4GHz 802.11b/g/n wireless connectivity to a compatible desktop or notebook. TP-Link specifies a theoretical link rate of up to 150Mbps, internal antenna, WPA/WPA2 security, and an 18.6 x 15 x 7.1mm body. Real throughput depends on the router, radio conditions, driver, and operating system; verify the adapter's hardware version and driver support before purchase.",
+      "brand": "TP-Link",
+      "category": "Peripherals",
+      "currency": "INR",
+      "price": 799,
+      "original_price": 799,
+      "rating": 0,
+      "reviews_count": 0,
+      "stock": 20,
+      "image": "https://static.tp-link.com/TL-WN725N_EU_3.0_01_normal_1506586609631g.jpg",
+      "images": ["https://static.tp-link.com/TL-WN725N_EU_3.0_01_normal_1506586609631g.jpg"],
+      "features": ["2.4GHz 802.11b/g/n Wi-Fi", "Up to 150Mbps theoretical 802.11n link rate", "USB 2.0 interface", "Nano-size body with internal antenna", "WPA/WPA2 wireless security listed by TP-Link"],
+      "specifications": [
+        {"label":"Model","value":"TL-WN725N"}, {"label":"Interface","value":"USB 2.0"},
+        {"label":"Wireless standards","value":"IEEE 802.11b/g/n on 2.4GHz"}, {"label":"Maximum signal rate","value":"Up to 150Mbps (theoretical 802.11n link rate)"},
+        {"label":"Dimensions","value":"18.6 x 15 x 7.1mm"}, {"label":"Weight","value":"2.1g without packaging"},
+        {"label":"Antenna","value":"Internal"}, {"label":"Security","value":"64/128-bit WEP, WPA, WPA2, WPA-PSK/WPA2-PSK, and IEEE 802.1X; version support varies"},
+        {"label":"System compatibility","value":"TP-Link lists Windows, macOS, and Linux; verify driver availability for the hardware version and OS"}
+      ],
+      "faqs": [
+        {"question":"Does the 150Mbps rate mean internet download speed?","answer":"No. It is a theoretical Wi-Fi link rate. Actual throughput varies with router, interference, distance, driver, and network conditions."},
+        {"question":"Does this adapter support 5GHz Wi-Fi?","answer":"The TL-WN725N specifications list 2.4GHz 802.11b/g/n; they do not list 5GHz support."},
+        {"question":"Will it fit without blocking nearby USB ports?","answer":"It is a nano adapter measuring 18.6 x 15 x 7.1mm, though clearance depends on the computer's port layout."},
+        {"question":"Will it work with my operating system?","answer":"TP-Link lists Windows, macOS, and Linux support, but the required driver depends on the adapter hardware version and OS release. Check TP-Link's download page before purchasing."}
+      ],
+      "tags": ["wifi-adapter", "tp-link", "usb", "wireless", "networking"]
+    }
+  ]
+}

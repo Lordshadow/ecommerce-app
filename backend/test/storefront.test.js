@@ -51,7 +51,7 @@ test('catalog, customer authentication, OTP recovery, account orders, and guest 
   try {
     const catalog = await invoke('GET', '/api/products?limit=1');
     assert.equal(catalog.statusCode, 200);
-    assert.equal(catalog.json.pagination.total, 194);
+    assert.equal(catalog.json.pagination.total, 12);
     assert.equal(catalog.json.products.length, 1);
     const productResponse = await invoke('GET', `/api/products/${catalog.json.products[0].id}`);
     assert.ok(Array.isArray(productResponse.json.product.specifications));
@@ -194,6 +194,16 @@ test('assistant API enforces scopes, signed ownership, and refund idempotency', 
   try {
     const noCredential = await invoke('GET', '/api/assistant/v1/products', undefined);
     assert.equal(noCredential.statusCode, 401);
+    assert.equal((await invoke('POST', '/api/assistant/v1/whatsapp-auth/request-code', { email })).statusCode, 401);
+    const codeRequested = await invoke('POST', '/api/assistant/v1/whatsapp-auth/request-code', { email }, '', { authorization: `Bearer ${secret}` });
+    assert.equal(codeRequested.statusCode, 200);
+    const whatsappCode = deliveredCodes.findLast(code => code.email === email && code.purpose === 'whatsapp_auth').code;
+    const whatsappIdentity = await invoke('POST', '/api/assistant/v1/whatsapp-auth/verify-code', { email, code: whatsappCode }, '', { authorization: `Bearer ${secret}` });
+    assert.equal(whatsappIdentity.statusCode, 200);
+    assert.equal(whatsappIdentity.json.customer_id, String(customerId));
+    assert.equal(auth.verifyCustomerToken(whatsappIdentity.json.customer_token).sub, String(customerId));
+    const wrongWhatsappCode = await invoke('POST', '/api/assistant/v1/whatsapp-auth/verify-code', { email, code: '000000' }, '', { authorization: `Bearer ${secret}` });
+    assert.equal(wrongWhatsappCode.statusCode, 400);
     const products = await invoke('GET', '/api/assistant/v1/products?query=test', undefined, '', { authorization: `Bearer ${secret}` });
     assert.equal(products.statusCode, 200);
     const exportFirst = await invoke('GET', '/api/assistant/v1/catalog/export?page=1&limit=2', undefined, '', { authorization: `Bearer ${secret}` });

@@ -39,10 +39,34 @@
 - Commands executed: `npm run seed` (repeat run); `npm test`; `npm run build`; Node syntax checks for backend modules; SQLite catalog-count queries.
 - Test results: 1 acceptance test passed with checks for catalog detail fields, registration, valid/invalid/expired OTP, email cooldown, sign-in/out, password reset, session expiry, profile update, account order privacy, guest checkout, and tracking. Production frontend build succeeded. Database remained at exactly 2,000 rows after reseeding: 1,900 sourced listings, 2,000 FAQs, 696 listings with explicit structured specifications, 256 existing reviews, 4 coupons, 8 categories, 0 test users, and 0 test orders.
 
-**Git Commit:**
-- Commit Hash & Message: not committed.
+## [CATALOG-REPLACEMENT-002] - Replace catalog with researched computer hardware
+**Timestamp:** 2026-11-10 23:58:26 (Asia/Kolkata)
+**Status:** COMPLETE
+**Objective & Rationale ("Why"):**
+- Diagnose the NovaRetail product lookup failure and replace the storefront catalog with manufacturer-verified laptops, PC components, and peripherals as requested.
 
-**Next Planned Task (Awaiting User Permission):**
+**Architectural Boundaries & Modularity:**
+- ApexStore remains backed by SQLite. The widget uses a separate tenant catalog index, so storefront product IDs/details must be synchronized to NovaRetail after the storefront reseed.
+
+**Files Touched:**
+- `backend/src/db/seed.js` (Modified - transactional catalog replacement while preserving orders, accounts, and return requests)
+- `backend/src/db/computer-catalog.json` (Created - 12 sourced computer products, manufacturer details, specs, and FAQs)
+- `backend/src/db/catalog-source.json` (Deleted - removed prior mixed catalog snapshot)
+- `backend/src/db/download-catalog.js` (Deleted - removed obsolete downloader)
+- `backend/package.json` (Modified - removed obsolete catalog downloader command)
+- `frontend/app/product/[id]/page.js` (Modified - clarifies demo price and stock values)
+- `README.md` (Modified - documents new catalog and reseed behavior)
+- `logs.md` (Modified - records verification)
+
+**Verification & Quality Assurance:**
+- Rebuilt the storefront backend container successfully; it is healthy and seeded 12 products with manufacturer-referenced specifications and FAQs. Price range is ₹699–₹1,30,991, across Laptops (2), PC Components (7), and Peripherals (3).
+- Read-only SQLite verification: products 12 (IDs 4727–4738), orders 11, return requests 8, reviews 0. The seed preserves order/account/return data and does not fabricate reviews.
+- Verified `GET /api/products/4727` returns the Lenovo listing with specs and FAQs.
+
+**Git Commit:**
+- No task commit; the prior checkpoint commit remains in history and these catalog updates are uncommitted.
+
+**Next Planned Task:**
 - None.
 
 ## 2026-11-03-docker-recreate - Recreate project containers
@@ -311,3 +335,14 @@
 
 **Next Planned Task (Awaiting User Permission):**
 - Rebuild and restart the Compose services once Docker Desktop grants access to its engine.
+## [QA-ALL-001] - Widget, dashboard, and workflow QA
+**Timestamp:** 2026-11-11 01:05 +05:30
+**Status:** COMPLETE
+- Updated the stale storefront README catalog count and integration test expectation from 194 products to the current 12-product catalog.
+- `backend`: seeded a unique temporary SQLite database and ran `npm test`; 5 passed, 0 failed. This covered catalog, account auth/OTP/recovery, guest and account orders/tracking, return eligibility windows, refund idempotency, and test provider safety without altering the live database.
+- `frontend`: `npm run build` succeeded.
+- Live smoke: 12 products; Acer product `4728` returned 11 specifications and 4 FAQs; `/product/4728` returned HTTP 200.
+- Storefront and support Compose services were healthy at completion.
+- QA files touched: `README.md`, `backend/test/storefront.test.js`, and `logs.md`. No commit created.
+
+\n

@@ -8,7 +8,6 @@
     "start": "node src/server.js",
     "mcp": "node src/mcp-server.js",
     "seed": "node src/db/seed.js",
-    "catalog:download": "node src/db/download-catalog.js",
     "test": "node --test"
   },
   "dependencies": {

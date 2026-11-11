@@ -157,12 +157,35 @@ async function handle(req, res, pathname, params, parseBody) {
   const match = pathname.slice(base.length);
   if (match === '/health' && req.method === 'GET') return json(res, 200, null, { status: 'ok' });
   const method = req.method;
-  const scope = match.startsWith('/catalog/export') || match.startsWith('/products') ? 'catalog:read' : match.startsWith('/customers') ? 'orders:read' : match.includes('/refund-eligibility') ? 'refunds:read' : match.includes('/otp') ? 'refunds:create' : match.startsWith('/orders') ? 'orders:read' : match.startsWith('/refunds') ? (method === 'POST' ? 'refunds:create' : 'refunds:read') : null;
+  const whatsappAuth = match.startsWith('/whatsapp-auth/');
+  const scope = whatsappAuth ? 'orders:read' : match.startsWith('/catalog/export') || match.startsWith('/products') ? 'catalog:read' : match.startsWith('/customers') ? 'orders:read' : match.includes('/refund-eligibility') ? 'refunds:read' : match.includes('/otp') ? 'refunds:create' : match.startsWith('/orders') ? 'orders:read' : match.startsWith('/refunds') ? (method === 'POST' ? 'refunds:create' : 'refunds:read') : null;
   if (!scope) return json(res, 404, 'NOT_FOUND');
   const credential = apiCredential(req, scope);
   if (credential.error) return json(res, credential.error === 'FORBIDDEN' ? 403 : 401, credential.error);
   const refunding = method === 'POST' && match === '/refunds';
   if (!limited(`${credential.name}:${refunding ? 'refund' : 'read'}`, refunding ? 10 : 120, 60_000)) return json(res, 429, 'RATE_LIMITED');
+
+  if (whatsappAuth && method === 'POST' && match === '/whatsapp-auth/request-code') {
+    const body = await parseBody(req);
+    const email = auth.emailValue(body.email);
+    if (!auth.validEmail(email) || !limited(`${credential.name}:wa-code:${email}`, 3, 60 * 60_000)) {
+      return json(res, 200, null, { message: 'If the verified account exists, a code has been sent.' });
+    }
+    const user = queryOne('SELECT id FROM users WHERE email = ? AND email_verified = 1', [email]);
+    if (user) {
+      try { await auth.issueCode(email, 'whatsapp_auth'); }
+      catch { return json(res, 503, 'TEMPORARILY_UNAVAILABLE'); }
+    }
+    return json(res, 200, null, { message: 'If the verified account exists, a code has been sent.' });
+  }
+  if (whatsappAuth && method === 'POST' && match === '/whatsapp-auth/verify-code') {
+    const body = await parseBody(req);
+    const email = auth.emailValue(body.email);
+    if (!auth.validEmail(email) || !auth.consumeCode(email, 'whatsapp_auth', body.code).ok) return json(res, 400, 'UNAUTHORIZED');
+    const user = queryOne('SELECT id FROM users WHERE email = ? AND email_verified = 1', [email]);
+    if (!user) return json(res, 400, 'UNAUTHORIZED');
+    return json(res, 200, null, { customer_id: String(user.id), customer_token: auth.createCustomerToken(user.id) });
+  }
 
   if (method === 'GET' && match === '/catalog/export') {
     const page = Math.max(1, Number.parseInt(params.get('page') || '1', 10) || 1);

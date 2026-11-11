@@ -1,6 +1,6 @@
 # ApexStore — e-commerce storefront
 
-A Next.js storefront backed by a Node.js HTTP API and SQLite. The local catalog contains the complete 194-product snapshot from the public product API across eight departments. The project includes customer accounts, email verification and password recovery, guest checkout, and order tracking.
+A Next.js storefront backed by a Node.js HTTP API and SQLite. Its curated demo catalog contains 12 real computer products across laptops, PC components, and peripherals. The project includes customer accounts, email verification and password recovery, guest checkout, and order tracking.
 
 ## Stack and layout
 
@@ -8,9 +8,8 @@ A Next.js storefront backed by a Node.js HTTP API and SQLite. The local catalog 
 - `backend/src/server.js` — product, order, review, coupon, and account API.
 - `backend/src/assistant-api.js` and `backend/src/mcp-server.js` — scoped shop API and stdio MCP adapter; MCP accesses data only through the API.
 - `backend/src/db/database.js` — SQLite schema and non-destructive migrations.
-- `backend/src/db/seed.js` — replaces the catalog and reviews from the downloaded product snapshot while preserving orders and accounts.
-- `backend/src/db/catalog-source.json` — fixed catalog snapshot used by seeding.
-- `backend/src/db/download-catalog.js` — refreshes product listings and reviews from DummyJSON’s public product API.
+- `backend/src/db/seed.js` — replaces the product catalog, product reviews, and catalog categories from the checked-in computer catalog while preserving orders, accounts, and return records.
+- `backend/src/db/computer-catalog.json` — researched manufacturer product descriptions, specifications, FAQs, and source links for the demo catalog.
 
 ## Start locally
 
@@ -64,7 +63,7 @@ The frontend API URL is embedded at build time. For a remote deployment, set `NE
 - The refund provider adapter sends automatic refunds and staff-approved refunds to the configured `PAYMENT_REFUND_URL`, honoring an idempotency key. Configure `PAYMENT_API_KEY` and the provider endpoint before enabling money movement; without them, refunds fail closed and do not move funds.
 - For a local demo without a payment processor, you can point `PAYMENT_REFUND_URL` to `http://127.0.0.1:5000/api/test/payment-refunds`, set `ENABLE_TEST_REFUND_ENDPOINT=true`, and set `PAYMENT_API_KEY` to a demo-only secret in `.env`, then run `docker compose up -d --build`. The endpoint requires that bearer secret and is hidden whenever `NODE_ENV=production`; it returns a deterministic test receipt with `test_mode: true` and `money_moved: false`. Never use this endpoint or its demo credential in production.
 
-The checked-in catalog snapshot is used by `npm run seed`, which adds missing products and updates imported listing details without clearing orders, reviews, coupons, or categories. To refresh that snapshot intentionally, run `npm run catalog:download` from `backend`, then `npm run seed`.
+The checked-in catalog is used by `npm run seed`. Seeding replaces all product, review, and category rows while preserving orders, accounts, coupons, and return/refund records. The catalog contains real computer models and manufacturer-verified technical facts. Demo prices and stock counts are illustrative, not live quotes or inventory. The seed preserves SQLite's product ID sequence, so older order snapshots cannot accidentally match newly listed products.
 
 ## Assistant API and MCP
 
@@ -100,11 +99,11 @@ Add the storefront's exact origin (such as `http://localhost:3000` in developmen
 
 ## Product data and attribution
 
-The catalog snapshot is fetched from [DummyJSON’s public products endpoint](https://dummyjson.com/docs/products). It contains 194 product records, source prices, images, product facts, and 582 source review comments. The app stores the source identifier on each product and preserves the source review author, rating, comment, and date. Specifications and FAQs are built from the source dimensions, warranty, shipping, availability, and return-policy fields. DummyJSON describes itself as demo data, so these listings and prices are not claims of live inventory or retailer pricing.
+The computer catalog has 10 real products across laptops, PC components, and peripherals. Product details, specifications, and product-specific FAQs are curated from official Lenovo, Acer, AMD, Intel, ASUS, Samsung, MSI, Kingston, Corsair, and Logitech pages linked in `backend/src/db/computer-catalog.json`. The products have no fabricated customer reviews. Prices and stock counts are clearly marked illustrative demo values and are not manufacturer quotes or live inventory.
 
 The storefront is configured for India: prices are displayed in INR, GST is calculated at 18%, standard delivery is ₹49, express delivery is ₹99, and standard delivery is free above ₹999.
 
-Run `npm run catalog:download` from `backend` to refresh `backend/src/db/catalog-source.json`, then run `npm run seed` to replace the current catalog and reviews. Prices are converted to INR using the app’s fixed reference rate; orders and account data are not deleted.
+Run `npm run seed` from `backend` to replace catalog rows from `backend/src/db/computer-catalog.json`. The seed is transactional: if validation or insertion fails, the prior catalog is retained. Existing order snapshots, accounts, and return/refund records are preserved; product IDs are not reset so historical orders cannot accidentally resolve to a new product.
 
 For local demos, the seed also creates two clearly labeled accounts with delivered orders and pending return requests:
 
