@@ -84,6 +84,13 @@ steps:
       - -ceu
       - gcloud run services describe ${_BACKEND_SERVICE} --region=${_REGION} --format='value(status.url)' > /workspace/api-url
 
+  - id: read-support-api-url
+    name: gcr.io/google.com/cloudsdktool/google-cloud-cli:stable
+    entrypoint: bash
+    args:
+      - -ceu
+      - gcloud run services describe assistant-api --region=${_REGION} --format='value(status.url)' > /workspace/support-api-url
+
   - id: build-web
     name: gcr.io/cloud-builders/docker
     entrypoint: bash
@@ -92,6 +99,7 @@ steps:
       - |
         docker build \
           --build-arg API_PROXY_TARGET="$$(cat /workspace/api-url)" \
+          --build-arg NEXT_PUBLIC_NOVARETAIL_GATEWAY_URL="$$(cat /workspace/support-api-url)" \
           --build-arg NEXT_PUBLIC_NOVARETAIL_TENANT=tenant_novaretail \
           -t ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPOSITORY}/apexstore-web:$BUILD_ID \
           frontend
@@ -129,5 +137,11 @@ steps:
         gcloud run services describe ${_FRONTEND_SERVICE} --region=${_REGION} --format='value(status.url)' > /workspace/web-url
         WEB_URL="$$(cat /workspace/web-url)"
         gcloud run services update ${_BACKEND_SERVICE} --region=${_REGION} --update-env-vars="FRONTEND_ORIGIN=$$WEB_URL"
+        SUPPORT_ORIGINS="$$(gcloud run services describe assistant-api --region=${_REGION} --format=json | python3 -c 'import json,sys; data=json.load(sys.stdin); containers=data.get("spec",{}).get("template",{}).get("spec",{}).get("containers",[]); env=containers[0].get("env",[]) if containers else []; print(next((item.get("value","") for item in env if item.get("name")=="WIDGET_ALLOWED_ORIGINS"),""))')"
+        if [[ ",$$SUPPORT_ORIGINS," != *",$$WEB_URL,"* ]]; then
+          SUPPORT_ORIGINS="$${SUPPORT_ORIGINS:+$$SUPPORT_ORIGINS,}$$WEB_URL"
+        fi
+        gcloud run services update assistant-api --region=${_REGION} --update-env-vars="^@^WIDGET_ALLOWED_ORIGINS=$$SUPPORT_ORIGINS"
         echo "ApexStore storefront: $$WEB_URL"
         echo "ApexStore API: $$(cat /workspace/api-url)"
+        echo "Support API: $$(cat /workspace/support-api-url)"

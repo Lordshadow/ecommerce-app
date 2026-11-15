@@ -67,6 +67,7 @@ After both services are deployed:
 - Set the assistant’s ApexStore API URL to the API service URL with `/api/assistant/v1` appended.
 - Set its catalog/API token to the token represented in `apexstore-shop-api-keys`.
 - Set the assistant’s refund callback URL and shared refund secret separately if you want refund decisions synchronized back to the store.
+- The storefront shared layout mounts `NovaRetailWidget`; Cloud Build points it at the `assistant-api` Cloud Run service, loads `/widget/v1/widget.js`, and adds the storefront URL to `WIDGET_ALLOWED_ORIGINS` on that support service.
 
 The API is public for the storefront and assistant, but its assistant routes require the configured scoped bearer token. Admin endpoints additionally require a verified account email in `ADMIN_EMAILS`, which can be configured on the API Cloud Run service after deployment.
 
