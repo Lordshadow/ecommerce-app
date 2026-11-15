@@ -50,7 +50,7 @@ export default function ProductDetailPage() {
       setLoading(true);
       setError(null);
       try {
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || '';
         const res = await fetch(`${apiUrl}/api/products/${params.id}`);
         const data = await res.json();
 
@@ -79,7 +79,7 @@ export default function ProductDetailPage() {
 
     setSubmittingReview(true);
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || '';
       const res = await fetch(`${apiUrl}/api/reviews`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

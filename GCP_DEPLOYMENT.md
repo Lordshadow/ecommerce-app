@@ -49,7 +49,7 @@ Grant it:
 
 The Cloud Build trigger identity needs **Artifact Registry Writer** on the repository, **Cloud Run Admin** on the project, and **Service Account User** (`roles/iam.serviceAccountUser`) on the runtime service account so it can deploy with that identity. In Cloud Build → Triggers, check which service account the trigger uses before granting these roles. The frontend Cloud Run service does not need access to database secrets.
 
-If you need the staff refund/order console, after deployment add the staff email addresses to `ADMIN_EMAILS` on the `apexstore-api` Cloud Run service. The email accounts must first register and verify through the storefront.
+If you need the staff refund/order console, after deployment add the staff email addresses to `ADMIN_EMAILS` on the `apexstore-api` Cloud Run service. The email accounts must first register and verify through the storefront. Staff sign in at `/admin`; the login API is `POST /api/admin/login`, and the order console is `/admin/orders`.
 
 ## Connect the GitHub repository to Cloud Build
 
@@ -74,5 +74,5 @@ The API is public for the storefront and assistant, but its assistant routes req
 
 - Cloud Run does not store the store database in its container filesystem. PostgreSQL data remains in Cloud SQL.
 - The build does not import local SQLite orders, user accounts, or refunds. It seeds demo data only when `_RUN_SEED=true`.
-- The frontend embeds the API URL during its Cloud Build, so use the provided pipeline to keep the URL current after service redeployments.
+- The frontend proxies API requests through its own `/api` paths. Cloud Build sets `API_PROXY_TARGET` to the current API URL, keeping browser sessions same-origin.
 - If a second Cloud SQL instance named `apexstore` was created accidentally, verify it contains no needed data before deleting it. The deployment uses `ai-support-db`; do not delete that instance.

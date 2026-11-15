@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { KeyRound, LogOut, Package, ShieldCheck, UserRound, RotateCcw, ArrowRight, CircleUserRound, LockKeyhole, ShoppingBag, Sparkles, Truck, RefreshCw, CheckCircle2, Clock3, PackageCheck, ArrowUpRight, Search, CircleDollarSign } from 'lucide-react';
 import { formatCurrency } from '../../lib/currency';
 
-const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+const API = process.env.NEXT_PUBLIC_API_URL || '';
 
 function statusStyles(status) {
   if (['Delivered', 'Processed', 'Partially Refunded', 'Refunded'].includes(status)) return 'border-emerald-200 bg-emerald-50 text-emerald-800';

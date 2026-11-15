@@ -54,7 +54,7 @@ steps:
       - --timeout=60
       - --service-account=${_BACKEND_SERVICE_ACCOUNT}
       - --add-cloudsql-instances=${_CLOUD_SQL_INSTANCE}
-      - --set-env-vars=NODE_ENV=production,DATABASE_ENGINE=postgres,PGHOST=/cloudsql/${_CLOUD_SQL_INSTANCE},PGPORT=5432,PGDATABASE=${_DB_NAME},PGUSER=${_DB_USER},PGPOOL_MAX=3,CUSTOMER_TOKEN_ISSUER=apexstore,FRONTEND_ORIGIN=https://pending.invalid,SMTP_HOST=smtp.gmail.com,SMTP_PORT=587,SMTP_FROM=${_SMTP_FROM},SMTP_SECURE=false
+      - --update-env-vars=NODE_ENV=production,DATABASE_ENGINE=postgres,PGHOST=/cloudsql/${_CLOUD_SQL_INSTANCE},PGPORT=5432,PGDATABASE=${_DB_NAME},PGUSER=${_DB_USER},PGPOOL_MAX=3,CUSTOMER_TOKEN_ISSUER=apexstore,FRONTEND_ORIGIN=https://pending.invalid,SMTP_HOST=smtp.gmail.com,SMTP_PORT=587,SMTP_FROM=${_SMTP_FROM},SMTP_SECURE=false
       - --set-secrets=PGPASSWORD=${_DB_PASSWORD_SECRET}:latest,AUTH_SECRET=${_AUTH_SECRET}:latest,CUSTOMER_TOKEN_PRIVATE_KEY=${_CUSTOMER_TOKEN_PRIVATE_KEY}:latest,SHOP_API_KEYS=${_SHOP_API_KEYS}:latest,SMTP_USER=${_SMTP_USER}:latest,SMTP_PASS=${_SMTP_PASS}:latest
 
   - id: seed-api-database-on-request
@@ -91,7 +91,7 @@ steps:
       - -ceu
       - |
         docker build \
-          --build-arg NEXT_PUBLIC_API_URL="$$(cat /workspace/api-url)" \
+          --build-arg API_PROXY_TARGET="$$(cat /workspace/api-url)" \
           --build-arg NEXT_PUBLIC_NOVARETAIL_TENANT=tenant_novaretail \
           -t ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPOSITORY}/apexstore-web:$BUILD_ID \
           frontend

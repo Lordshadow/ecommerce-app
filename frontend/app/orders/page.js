@@ -21,7 +21,7 @@ export default function OrdersPage() {
   const [accountLoading, setAccountLoading] = useState(true);
 
   const loadAccountOrders = useCallback(async () => {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || '';
     try {
       const meResponse = await fetch(`${apiUrl}/api/auth/me`, { credentials: 'include' });
       const meData = await meResponse.json();
@@ -55,7 +55,7 @@ export default function OrdersPage() {
     setOrder(null);
 
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || '';
       const res = await fetch(`${apiUrl}/api/orders/${encodeURIComponent(orderId.trim())}`, { credentials: 'include' });
       const data = await res.json();
 

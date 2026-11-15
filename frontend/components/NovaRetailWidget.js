@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation';
 
 const gatewayBase = (process.env.NEXT_PUBLIC_NOVARETAIL_GATEWAY_URL || 'http://localhost:8000').replace(/\/$/, '');
 const tenant = process.env.NEXT_PUBLIC_NOVARETAIL_TENANT || 'ApexStore';
-const apiBase = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000').replace(/\/$/, '');
+const apiBase = (process.env.NEXT_PUBLIC_API_URL || '').replace(/\/$/, '');
 const scriptId = 'novaretail-support-widget';
 
 export default function NovaRetailWidget() {

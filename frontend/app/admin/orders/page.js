@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { ClipboardCheck, LoaderCircle, PackageCheck, RefreshCw, ShieldAlert } from 'lucide-react';
 import { formatCurrency } from '../../../lib/currency';
 
-const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+const API = process.env.NEXT_PUBLIC_API_URL || '';
 
 const nextActions = {
   Processing: [
@@ -98,7 +98,7 @@ export default function AdminOrdersPage() {
         <button onClick={load} className="flex items-center justify-center gap-2 rounded-xl border border-slate-600 px-4 py-2.5 text-sm font-bold hover:bg-slate-800"><RefreshCw className="h-4 w-4" />Refresh</button>
       </header>
 
-      {!admin && !loading && <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5 text-sm text-amber-950"><strong>Staff access required.</strong> Sign in with a verified account whose email is listed in the backend <code>ADMIN_EMAILS</code> setting.</div>}
+      {!admin && !loading && <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5 text-sm text-amber-950"><strong>Staff access required.</strong> Sign in with a verified account whose email is listed in the backend <code>ADMIN_EMAILS</code> setting. <a href="/admin" className="ml-1 font-bold underline">Open staff sign in</a></div>}
       {error && <p role="alert" className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800">{error}</p>}
       {message && <p role="status" className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800">{message}</p>}
 

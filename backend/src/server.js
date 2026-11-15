@@ -240,6 +240,7 @@ const server = http.createServer(async (req, res) => {
         status: 'online',
         endpoints: [
           'POST /api/auth/register, /api/auth/verify-email, /api/auth/login, /api/auth/request-password-reset, /api/auth/reset-password, /api/auth/logout',
+          'POST /api/admin/login (verified staff account sign-in)',
           'GET /api/auth/me, /api/account/orders',
           'GET /api/admin/orders, /api/admin/refunds (allowlisted staff only)',
           'PATCH /api/admin/orders/:id/status, PATCH /api/admin/refunds/:id/review, POST /api/admin/refunds/:id/process',
@@ -259,6 +260,39 @@ const server = http.createServer(async (req, res) => {
 
     // 1a. Staff order and refund workflows. Access is granted only to configured staff emails.
     if (pathname.startsWith('/api/admin/')) {
+      if (req.method === 'POST' && pathname === '/api/admin/login') {
+        const remoteKey = auth.ipFor(req);
+        if (!auth.checkRateLimit(`admin-login:${remoteKey}`, 10, 15 * 60_000)) {
+          return sendJSON(res, 429, { success: false, error: 'Too many sign-in attempts. Try again later.' });
+        }
+        const requestOrigin = req.headers.origin;
+        const allowedOrigin = process.env.FRONTEND_ORIGIN || 'http://localhost:3000';
+        if (requestOrigin && requestOrigin !== allowedOrigin) {
+          return sendJSON(res, 403, { success: false, error: 'Request origin is not allowed.' });
+        }
+        const body = await parseBody(req);
+        const normalizedEmail = auth.emailValue(body.email);
+        const user = await queryOne('SELECT * FROM users WHERE email = ?', [normalizedEmail]);
+        if (!user || typeof body.password !== 'string') {
+          return sendJSON(res, 401, { success: false, error: 'Email or password is incorrect.' });
+        }
+        const candidate = await auth.hashPassword(body.password, user.password_salt);
+        if (!auth.safeEqual(candidate.hash, user.password_hash)) {
+          return sendJSON(res, 401, { success: false, error: 'Email or password is incorrect.' });
+        }
+        if (!user.email_verified) {
+          return sendJSON(res, 403, { success: false, error: 'Verify your email before signing in.' });
+        }
+        if (!isAdmin(user)) {
+          return sendJSON(res, 403, { success: false, error: 'This account is not enabled for staff access.' });
+        }
+        await auth.createSession(user.id, res);
+        return sendJSON(res, 200, {
+          success: true,
+          user: { ...auth.userView(user), is_admin: true }
+        });
+      }
+
       const currentUser = await auth.getCurrentUser(req);
       if (!currentUser) return sendJSON(res, 401, { success: false, error: 'Sign in with an authorized staff account.' });
       if (!isAdmin(currentUser)) return sendJSON(res, 403, { success: false, error: 'You do not have permission to access order management.' });

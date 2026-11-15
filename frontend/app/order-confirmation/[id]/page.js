@@ -25,7 +25,7 @@ export default function OrderConfirmationPage() {
 
     const fetchOrder = async () => {
       try {
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || '';
         const res = await fetch(`${apiUrl}/api/orders/${params.id}`, { credentials: 'include' });
         const data = await res.json();
         if (data.success && data.order) {

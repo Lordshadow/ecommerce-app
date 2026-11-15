@@ -33,7 +33,7 @@ export default function Navbar() {
   const searchRef = useRef(null);
 
   useEffect(() => {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || '';
     const refreshAccount = () => fetch(`${apiUrl}/api/auth/me`, { credentials: 'include' })
       .then(response => response.json())
       .then(data => setAccount(data.user || null))
@@ -54,7 +54,7 @@ export default function Navbar() {
     const timer = setTimeout(async () => {
       setIsSearching(true);
       try {
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || '';
         const res = await fetch(`${apiUrl}/api/products?search=${encodeURIComponent(searchQuery)}&limit=5`);
         const data = await res.json();
         if (data.success) {

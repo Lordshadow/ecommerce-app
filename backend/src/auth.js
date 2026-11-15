@@ -78,14 +78,12 @@ function parseCookies(req) {
 
 function cookieOptions(maxAgeSeconds) {
   const secure = process.env.NODE_ENV === 'production';
-  const sameSite = secure ? 'None' : 'Lax';
-  return `${SESSION_COOKIE}=; Path=/; HttpOnly; SameSite=${sameSite}; Max-Age=${maxAgeSeconds}${secure ? '; Secure' : ''}`;
+  return `${SESSION_COOKIE}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=${maxAgeSeconds}${secure ? '; Secure' : ''}`;
 }
 
 function setSessionCookie(res, token) {
   const secure = process.env.NODE_ENV === 'production';
-  const sameSite = secure ? 'None' : 'Lax';
-  res.setHeader('Set-Cookie', `${SESSION_COOKIE}=${encodeURIComponent(token)}; Path=/; HttpOnly; SameSite=${sameSite}; Max-Age=${Math.floor(SESSION_TTL_MS / 1000)}${secure ? '; Secure' : ''}`);
+  res.setHeader('Set-Cookie', `${SESSION_COOKIE}=${encodeURIComponent(token)}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${Math.floor(SESSION_TTL_MS / 1000)}${secure ? '; Secure' : ''}`);
 }
 
 function clearSessionCookie(res) {

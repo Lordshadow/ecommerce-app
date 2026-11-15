@@ -38,7 +38,7 @@ export default function CheckoutPage() {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || '';
     fetch(`${apiUrl}/api/auth/me`, { credentials: 'include' })
       .then(response => response.json())
       .then(data => {
@@ -73,7 +73,7 @@ export default function CheckoutPage() {
     setLoading(true);
 
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || '';
       const orderPayload = {
         customer_name: formData.name,
         customer_email: formData.email,
