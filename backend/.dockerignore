@@ -1,4 +1,8 @@
 node_modules
-src/db/ecommerce.db*
 .env
 .env.*
+!.env.example
+ecommerce.db
+ecommerce.db-shm
+ecommerce.db-wal
+npm-debug.log*

@@ -9,4 +9,4 @@ COPY src ./src
 RUN mkdir -p /data && chown -R node:node /app /data
 USER node
 EXPOSE 5000
-CMD ["sh", "-c", "npm run seed && npm start"]
+CMD ["sh", "-c", "if [ \"$DATABASE_ENGINE\" = \"postgres\" ]; then npm start; else npm run seed && npm start; fi"]

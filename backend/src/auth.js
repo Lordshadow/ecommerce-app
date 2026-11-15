@@ -90,10 +90,10 @@ function clearSessionCookie(res) {
   res.setHeader('Set-Cookie', cookieOptions(0));
 }
 
-function getCurrentUser(req) {
+async function getCurrentUser(req) {
   const token = parseCookies(req)[SESSION_COOKIE];
   if (!token || token.length > 200) return null;
-  const session = queryOne(`
+  const session = await queryOne(`
     SELECT users.id, users.name, users.email, users.email_verified, auth_sessions.id AS session_id
     FROM auth_sessions JOIN users ON users.id = auth_sessions.user_id
     WHERE auth_sessions.token_hash = ? AND auth_sessions.expires_at > ? AND users.email_verified = 1
@@ -102,18 +102,18 @@ function getCurrentUser(req) {
   return { id: session.id, name: session.name, email: session.email, email_verified: Boolean(session.email_verified) };
 }
 
-function createSession(userId, res) {
+async function createSession(userId, res) {
   const token = crypto.randomBytes(32).toString('base64url');
   const now = Date.now();
-  run('INSERT INTO auth_sessions (user_id, token_hash, expires_at, created_at) VALUES (?, ?, ?, ?)', [
+  await run('INSERT INTO auth_sessions (user_id, token_hash, expires_at, created_at) VALUES (?, ?, ?, ?)', [
     userId, hashToken(token), now + SESSION_TTL_MS, now
   ]);
   setSessionCookie(res, token);
 }
 
-function revokeSession(req) {
+async function revokeSession(req) {
   const token = parseCookies(req)[SESSION_COOKIE];
-  if (token) run('DELETE FROM auth_sessions WHERE token_hash = ?', [hashToken(token)]);
+  if (token) await run('DELETE FROM auth_sessions WHERE token_hash = ?', [hashToken(token)]);
 }
 
 function checkRateLimit(key, max, windowMs) {
@@ -148,36 +148,36 @@ function userView(user) {
 
 async function issueCode(email, purpose) {
   const now = Date.now();
-  const cooldown = queryOne(
+  const cooldown = await queryOne(
     'SELECT created_at FROM auth_codes WHERE email = ? AND purpose = ? ORDER BY created_at DESC LIMIT 1',
     [email, purpose]
   );
   if (cooldown && now - cooldown.created_at < 60_000) {
     return { ok: false, status: 429, error: 'Please wait before requesting another code.' };
   }
-  const hourly = queryOne(
+  const hourly = await queryOne(
     'SELECT COUNT(*) AS count FROM auth_codes WHERE email = ? AND purpose = ? AND created_at > ?',
     [email, purpose, now - 60 * 60 * 1000]
   );
   if (hourly.count >= 5) return { ok: false, status: 429, error: 'Too many code requests. Try again later.' };
 
   const code = String(crypto.randomInt(0, 1_000_000)).padStart(6, '0');
-  run('DELETE FROM auth_codes WHERE email = ? AND purpose = ?', [email, purpose]);
-  run('INSERT INTO auth_codes (email, purpose, code_hash, expires_at, attempts, created_at) VALUES (?, ?, ?, ?, 0, ?)', [
+  await run('DELETE FROM auth_codes WHERE email = ? AND purpose = ?', [email, purpose]);
+  await run('INSERT INTO auth_codes (email, purpose, code_hash, expires_at, attempts, created_at) VALUES (?, ?, ?, ?, 0, ?)', [
     email, purpose, hashCode(email, purpose, code), now + CODE_TTL_MS, now
   ]);
   try {
     await sendVerificationCode({ email, code, purpose });
   } catch (error) {
-    run('DELETE FROM auth_codes WHERE email = ? AND purpose = ?', [email, purpose]);
+    await run('DELETE FROM auth_codes WHERE email = ? AND purpose = ?', [email, purpose]);
     throw error;
   }
   return { ok: true };
 }
 
-function consumeCode(email, purpose, code) {
+async function consumeCode(email, purpose, code) {
   if (!/^\d{6}$/.test(String(code || ''))) return { ok: false, error: 'The code is invalid or expired.' };
-  const record = queryOne(
+  const record = await queryOne(
     'SELECT * FROM auth_codes WHERE email = ? AND purpose = ? ORDER BY created_at DESC LIMIT 1',
     [email, purpose]
   );
@@ -186,10 +186,10 @@ function consumeCode(email, purpose, code) {
   }
   const candidate = hashCode(email, purpose, code);
   if (!safeEqual(candidate, record.code_hash)) {
-    run('UPDATE auth_codes SET attempts = attempts + 1 WHERE id = ?', [record.id]);
+    await run('UPDATE auth_codes SET attempts = attempts + 1 WHERE id = ?', [record.id]);
     return { ok: false, error: 'The code is invalid or expired.' };
   }
-  run('DELETE FROM auth_codes WHERE id = ?', [record.id]);
+  await run('DELETE FROM auth_codes WHERE id = ?', [record.id]);
   return { ok: true };
 }
 

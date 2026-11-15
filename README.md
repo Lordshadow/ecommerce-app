@@ -1,19 +1,19 @@
 # ApexStore — e-commerce storefront
 
-A Next.js storefront backed by a Node.js HTTP API and SQLite. Its curated demo catalog contains 12 real computer products across laptops, PC components, and peripherals. The project includes customer accounts, email verification and password recovery, guest checkout, and order tracking.
+A Next.js storefront backed by a Node.js HTTP API. Local development uses SQLite; Cloud Run uses Cloud SQL for PostgreSQL. Its curated demo catalog contains 12 real computer products across laptops, PC components, and peripherals. The project includes customer accounts, email verification and password recovery, guest checkout, and order tracking.
 
 ## Stack and layout
 
 - `frontend/` — Next.js 14 app, storefront pages, account UI, cart, and wishlist.
 - `backend/src/server.js` — product, order, review, coupon, and account API.
 - `backend/src/assistant-api.js` and `backend/src/mcp-server.js` — scoped shop API and stdio MCP adapter; MCP accesses data only through the API.
-- `backend/src/db/database.js` — SQLite schema and non-destructive migrations.
+- `backend/src/db/database.js` — selects the SQLite or PostgreSQL adapter from `DATABASE_ENGINE`.
 - `backend/src/db/seed.js` — replaces the product catalog, product reviews, and catalog categories from the checked-in computer catalog while preserving orders, accounts, and return records.
 - `backend/src/db/computer-catalog.json` — researched manufacturer product descriptions, specifications, FAQs, and source links for the demo catalog.
 
 ## Start locally
 
-Use Node.js 22.5 or newer and npm. The backend uses Node’s built-in `node:sqlite`.
+Use Node.js 22.5 or newer and npm. Local development uses Node’s built-in `node:sqlite`; Cloud Run uses the `pg` driver and Cloud SQL PostgreSQL.
 
 1. In one terminal, configure email and session settings, then run the backend:
 
@@ -51,6 +51,8 @@ docker compose up --build -d
 Open `http://localhost:3000`; the API is at `http://localhost:5000/api`. The backend seeds the catalog on first start and stores SQLite data in the persistent `storefront-data` volume. To stop the services while keeping data, run `docker compose down`. To follow logs, run `docker compose logs -f`; to remove the database volume too, run `docker compose down -v`.
 
 The frontend API URL is embedded at build time. For a remote deployment, set `NEXT_PUBLIC_API_URL` to the publicly reachable API origin and `FRONTEND_ORIGIN` to the storefront origin before building. Set a real `AUTH_SECRET` and SMTP credentials in `.env`; the example fallback secret is only intended for local evaluation.
+
+For Cloud Build and Cloud Run setup, follow [GCP_DEPLOYMENT.md](GCP_DEPLOYMENT.md). The Cloud Run backend uses Cloud SQL PostgreSQL; it does not persist customer data in the container filesystem. Existing local SQLite orders are not automatically copied to Cloud SQL. The optional Cloud Run seed job initializes the demo catalog and sample orders in a new database.
 
 ## Order management and refunds
 

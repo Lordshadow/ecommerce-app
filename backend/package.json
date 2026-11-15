@@ -1,7 +1,7 @@
 {
   "name": "ecommerce-backend",
   "version": "1.0.0",
-  "description": "Functional SQLite Express REST API for modern eCommerce shop",
+  "description": "Express REST API for ApexStore using SQLite locally and PostgreSQL in Cloud Run",
   "main": "src/server.js",
   "type": "commonjs",
   "scripts": {
@@ -13,6 +13,7 @@
   "dependencies": {
     "cors": "^2.8.5",
     "express": "^4.19.2",
-    "nodemailer": "^10.3.1"
+    "nodemailer": "^10.3.1",
+    "pg": "^8.23.1"
   }
 }

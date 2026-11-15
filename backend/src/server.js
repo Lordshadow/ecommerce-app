@@ -1,6 +1,6 @@
 const http = require('node:http');
 const crypto = require('node:crypto');
-const { queryAll, queryOne, run } = require('./db/database');
+const { queryAll, queryOne, run, ready } = require('./db/database');
 const auth = require('./auth');
 const assistantApi = require('./assistant-api');
 const { sendRefund } = require('./payment-provider');
@@ -26,8 +26,8 @@ function isAdmin(user) {
   return allowed.includes(user.email.toLowerCase());
 }
 
-function appendOrderStatus(orderId, oldStatus, newStatus, actorId, note = '') {
-  run('INSERT INTO order_status_history (order_id, old_status, new_status, changed_by, note) VALUES (?, ?, ?, ?, ?)', [
+async function appendOrderStatus(orderId, oldStatus, newStatus, actorId, note = '') {
+  await run('INSERT INTO order_status_history (order_id, old_status, new_status, changed_by, note) VALUES (?, ?, ?, ?, ?)', [
     orderId, oldStatus || null, newStatus, actorId || null, note
   ]);
 }
@@ -117,13 +117,13 @@ async function handleAssistantRefundReview(req, res, pathname) {
     sendJSON(res, 400, { success: false, error: 'Provide an order ID, source refund ID, and Approved or Rejected decision.' });
     return true;
   }
-  const candidates = queryAll("SELECT * FROM refund_requests WHERE order_id = ? AND (status IN ('Requested', 'Approved') OR (status = 'Processed' AND admin_note LIKE ?)) ORDER BY created_at DESC", [orderId, `%${sourceRefundId}%`]);
+  const candidates = await queryAll("SELECT * FROM refund_requests WHERE order_id = ? AND (status IN ('Requested', 'Approved') OR (status = 'Processed' AND admin_note LIKE ?)) ORDER BY created_at DESC", [orderId, `%${sourceRefundId}%`]);
   if (candidates.length !== 1) {
     sendJSON(res, 409, { success: false, error: candidates.length ? 'More than one store refund is open for this order; review it in the store admin panel.' : 'No open store refund exists for this order.' });
     return true;
   }
   const refund = candidates[0];
-  const order = queryOne('SELECT id, currency, status, total, shipping_fee FROM orders WHERE id = ?', [orderId]);
+  const order = await queryOne('SELECT id, currency, status, total, shipping_fee FROM orders WHERE id = ?', [orderId]);
   if (!order) {
     sendJSON(res, 404, { success: false, error: 'Store order not found.' });
     return true;
@@ -132,16 +132,16 @@ async function handleAssistantRefundReview(req, res, pathname) {
     return sendJSON(res, 200, { success: true, refund_id: refund.id, status: 'Processed', amount: Number(refund.amount), replayed: true, test_mode: true, money_moved: false });
   }
   if (decision === 'Rejected') {
-    run("UPDATE refund_requests SET status = 'Rejected', admin_note = ?, reviewed_at = CURRENT_TIMESTAMP WHERE id = ? AND status IN ('Requested', 'Approved')", [`Rejected in AI dashboard (${sourceRefundId}). ${String(body.note || '').slice(0, 700)}`, refund.id]);
+    await run("UPDATE refund_requests SET status = 'Rejected', admin_note = ?, reviewed_at = CURRENT_TIMESTAMP WHERE id = ? AND status IN ('Requested', 'Approved')", [`Rejected in AI dashboard (${sourceRefundId}). ${String(body.note || '').slice(0, 700)}`, refund.id]);
     return sendJSON(res, 200, { success: true, refund_id: refund.id, status: 'Rejected', amount: Number(refund.amount) });
   }
   try {
     const providerResult = await sendRefund({ orderId, amount: Number(refund.amount), currency: order.currency || 'INR', items: JSON.parse(refund.items || '[]'), idempotencyKey: `store-refund-${refund.id}`, refundId: refund.id });
-    run("UPDATE refund_requests SET status = 'Processed', admin_note = ?, reviewed_at = CURRENT_TIMESTAMP, processed_at = CURRENT_TIMESTAMP, processor_ref = ? WHERE id = ? AND status IN ('Requested', 'Approved')", [`Approved and processed from AI dashboard (${sourceRefundId}). ${String(body.note || '').slice(0, 500)}`, String(providerResult.id || providerResult.refund_id || ''), refund.id]);
-    const issued = queryOne("SELECT COALESCE(SUM(amount), 0) AS amount FROM refund_requests WHERE order_id = ? AND status = 'Processed'", [orderId]);
+    await run("UPDATE refund_requests SET status = 'Processed', admin_note = ?, reviewed_at = CURRENT_TIMESTAMP, processed_at = CURRENT_TIMESTAMP, processor_ref = ? WHERE id = ? AND status IN ('Requested', 'Approved')", [`Approved and processed from AI dashboard (${sourceRefundId}). ${String(body.note || '').slice(0, 500)}`, String(providerResult.id || providerResult.refund_id || ''), refund.id]);
+    const issued = await queryOne("SELECT COALESCE(SUM(amount), 0) AS amount FROM refund_requests WHERE order_id = ? AND status = 'Processed'", [orderId]);
     const nextStatus = issued.amount >= Math.max(0, Number(order.total) - Number(order.shipping_fee || 0)) - 0.01 ? 'Refunded' : 'Partially Refunded';
-    run('UPDATE orders SET status = ? WHERE id = ?', [nextStatus, orderId]);
-    appendOrderStatus(orderId, order.status, nextStatus, null, `Refund ${refund.id} processed from AI dashboard.`);
+    await run('UPDATE orders SET status = ? WHERE id = ?', [nextStatus, orderId]);
+    await appendOrderStatus(orderId, order.status, nextStatus, null, `Refund ${refund.id} processed from AI dashboard.`);
     return sendJSON(res, 200, { success: true, refund_id: refund.id, status: 'Processed', amount: Number(refund.amount), provider_ref: String(providerResult.id || providerResult.refund_id || ''), test_mode: providerResult.test_mode === true, money_moved: providerResult.money_moved === true });
   } catch {
     sendJSON(res, 503, { success: false, error: 'Refund provider is unavailable; no status was changed.', code: 'TEMPORARILY_UNAVAILABLE' });
@@ -259,7 +259,7 @@ const server = http.createServer(async (req, res) => {
 
     // 1a. Staff order and refund workflows. Access is granted only to configured staff emails.
     if (pathname.startsWith('/api/admin/')) {
-      const currentUser = auth.getCurrentUser(req);
+      const currentUser = await auth.getCurrentUser(req);
       if (!currentUser) return sendJSON(res, 401, { success: false, error: 'Sign in with an authorized staff account.' });
       if (!isAdmin(currentUser)) return sendJSON(res, 403, { success: false, error: 'You do not have permission to access order management.' });
 
@@ -271,17 +271,18 @@ const server = http.createServer(async (req, res) => {
       }
 
       if (req.method === 'GET' && pathname === '/api/admin/orders') {
-        const orders = queryAll('SELECT * FROM orders ORDER BY created_at DESC LIMIT 300');
-        return sendJSON(res, 200, { success: true, orders: orders.map(order => ({
+        const orders = await queryAll('SELECT * FROM orders ORDER BY created_at DESC LIMIT 300');
+        const hydratedOrders = await Promise.all(orders.map(async order => ({
           ...order,
           items: JSON.parse(order.items || '[]'),
-          history: queryAll('SELECT old_status, new_status, note, created_at FROM order_status_history WHERE order_id = ? ORDER BY id ASC', [order.id]),
-          refunds: queryAll('SELECT id, amount, status FROM refund_requests WHERE order_id = ? ORDER BY created_at DESC', [order.id])
-        })) });
+          history: await queryAll('SELECT old_status, new_status, note, created_at FROM order_status_history WHERE order_id = ? ORDER BY id ASC', [order.id]),
+          refunds: await queryAll('SELECT id, amount, status FROM refund_requests WHERE order_id = ? ORDER BY created_at DESC', [order.id])
+        })));
+        return sendJSON(res, 200, { success: true, orders: hydratedOrders });
       }
 
       if (req.method === 'GET' && pathname === '/api/admin/refunds') {
-        const refunds = queryAll(`
+        const refunds = await queryAll(`
           SELECT r.*, o.customer_name, o.customer_email, o.currency, o.status AS order_status,
                  u.name AS requester_name
           FROM refund_requests r
@@ -298,44 +299,44 @@ const server = http.createServer(async (req, res) => {
 
       const statusMatch = pathname.match(/^\/api\/admin\/orders\/([A-Za-z0-9-]+)\/status$/);
       if (req.method === 'PATCH' && statusMatch) {
-        const order = queryOne('SELECT id, status, items FROM orders WHERE id = ?', [statusMatch[1]]);
+        const order = await queryOne('SELECT id, status, items FROM orders WHERE id = ?', [statusMatch[1]]);
         if (!order) return sendJSON(res, 404, { success: false, error: 'Order not found.' });
         const nextStatus = typeof body.status === 'string' ? body.status : '';
         if (!(orderTransitions[order.status] || []).includes(nextStatus)) {
           return sendJSON(res, 409, { success: false, error: `Cannot change an order from ${order.status} to ${nextStatus || 'that status'}.` });
         }
         const note = typeof body.note === 'string' ? body.note.trim().slice(0, 500) : '';
-        run('UPDATE orders SET status = ?, delivered_at = CASE WHEN ? = \'Delivered\' THEN CURRENT_TIMESTAMP ELSE delivered_at END WHERE id = ?', [nextStatus, nextStatus, order.id]);
-        appendOrderStatus(order.id, order.status, nextStatus, currentUser.id, note);
+        await run('UPDATE orders SET status = ?, delivered_at = CASE WHEN ? = \'Delivered\' THEN CURRENT_TIMESTAMP ELSE delivered_at END WHERE id = ?', [nextStatus, nextStatus, order.id]);
+        await appendOrderStatus(order.id, order.status, nextStatus, currentUser.id, note);
         if (nextStatus === 'Rejected' || (nextStatus === 'Cancelled' && ['Confirmed', 'Preparing'].includes(order.status))) {
-          for (const item of JSON.parse(order.items || '[]')) run('UPDATE products SET stock = stock + ? WHERE id = ?', [Number(item.quantity) || 0, Number(item.id)]);
+          for (const item of JSON.parse(order.items || '[]')) await run('UPDATE products SET stock = stock + ? WHERE id = ?', [Number(item.quantity) || 0, Number(item.id)]);
         }
         return sendJSON(res, 200, { success: true, order_id: order.id, old_status: order.status, status: nextStatus });
       }
 
       const reviewMatch = pathname.match(/^\/api\/admin\/refunds\/(\d+)\/review$/);
       if (req.method === 'PATCH' && reviewMatch) {
-        const refund = queryOne('SELECT * FROM refund_requests WHERE id = ?', [Number(reviewMatch[1])]);
+        const refund = await queryOne('SELECT * FROM refund_requests WHERE id = ?', [Number(reviewMatch[1])]);
         if (!refund) return sendJSON(res, 404, { success: false, error: 'Refund request not found.' });
         if (refund.status !== 'Requested') return sendJSON(res, 409, { success: false, error: 'Only requested refunds can be approved or rejected.' });
         if (!['Approved', 'Rejected'].includes(body.status)) return sendJSON(res, 400, { success: false, error: 'Choose Approved or Rejected.' });
         const note = typeof body.note === 'string' ? body.note.trim().slice(0, 1000) : '';
         if (body.status === 'Rejected' && note.length < 5) return sendJSON(res, 400, { success: false, error: 'Provide a short reason when rejecting a refund.' });
         if (body.status === 'Approved') {
-          const order = queryOne('SELECT id, currency FROM orders WHERE id = ?', [refund.order_id]);
+          const order = await queryOne('SELECT id, currency FROM orders WHERE id = ?', [refund.order_id]);
           try {
             const providerResult = await sendRefund({ orderId: order.id, amount: Number(refund.amount), currency: order.currency || 'USD', items: JSON.parse(refund.items || '[]'), idempotencyKey: `staff-refund-${refund.id}`, refundId: refund.id });
-            run("UPDATE refund_requests SET status = 'Processed', admin_note = ?, reviewed_by = ?, reviewed_at = CURRENT_TIMESTAMP, processed_at = CURRENT_TIMESTAMP, processor_ref = ? WHERE id = ?", [note, currentUser.id, String(providerResult.id || providerResult.refund_id || ''), refund.id]);
-            const orderState = queryOne('SELECT status, total, shipping_fee FROM orders WHERE id = ?', [order.id]);
-            const issued = queryOne("SELECT COALESCE(SUM(amount), 0) AS amount FROM refund_requests WHERE order_id = ? AND status = 'Processed'", [order.id]);
+            await run("UPDATE refund_requests SET status = 'Processed', admin_note = ?, reviewed_by = ?, reviewed_at = CURRENT_TIMESTAMP, processed_at = CURRENT_TIMESTAMP, processor_ref = ? WHERE id = ?", [note, currentUser.id, String(providerResult.id || providerResult.refund_id || ''), refund.id]);
+            const orderState = await queryOne('SELECT status, total, shipping_fee FROM orders WHERE id = ?', [order.id]);
+            const issued = await queryOne("SELECT COALESCE(SUM(amount), 0) AS amount FROM refund_requests WHERE order_id = ? AND status = 'Processed'", [order.id]);
             const refundStatus = issued.amount >= Math.max(0, Number(orderState.total) - Number(orderState.shipping_fee || 0)) - 0.01 ? 'Refunded' : 'Partially Refunded';
-            run('UPDATE orders SET status = ? WHERE id = ?', [refundStatus, order.id]);
-            appendOrderStatus(order.id, orderState.status, refundStatus, currentUser.id, `Refund ${refund.id} issued by payment provider.`);
+            await run('UPDATE orders SET status = ? WHERE id = ?', [refundStatus, order.id]);
+            await appendOrderStatus(order.id, orderState.status, refundStatus, currentUser.id, `Refund ${refund.id} issued by payment provider.`);
           } catch (error) {
             return sendJSON(res, 503, { success: false, error: 'Refund provider is temporarily unavailable.', code: 'TEMPORARILY_UNAVAILABLE' });
           }
         } else {
-          run('UPDATE refund_requests SET status = ?, admin_note = ?, reviewed_by = ?, reviewed_at = CURRENT_TIMESTAMP WHERE id = ?', [body.status, note, currentUser.id, refund.id]);
+          await run('UPDATE refund_requests SET status = ?, admin_note = ?, reviewed_by = ?, reviewed_at = CURRENT_TIMESTAMP WHERE id = ?', [body.status, note, currentUser.id, refund.id]);
         }
         const sync = await syncStoreRefundToAssistant({ orderId: refund.order_id, refundId: refund.id, status: body.status === 'Approved' ? 'Processed' : 'Rejected', amount: Number(refund.amount), note });
         return sendJSON(res, 200, { success: true, refund_id: refund.id, status: body.status === 'Approved' ? 'Processed' : 'Rejected', ...(sync.synced ? { assistant_synced: true } : { assistant_sync_warning: sync.warning }) });
@@ -343,17 +344,17 @@ const server = http.createServer(async (req, res) => {
 
       const processMatch = pathname.match(/^\/api\/admin\/refunds\/(\d+)\/process$/);
       if (req.method === 'POST' && processMatch) {
-        const refund = queryOne('SELECT * FROM refund_requests WHERE id = ?', [Number(processMatch[1])]);
+        const refund = await queryOne('SELECT * FROM refund_requests WHERE id = ?', [Number(processMatch[1])]);
         if (!refund) return sendJSON(res, 404, { success: false, error: 'Refund request not found.' });
         if (refund.status !== 'Approved') return sendJSON(res, 409, { success: false, error: 'Approve the refund before marking it processed.' });
-        run('UPDATE refund_requests SET status = ?, processed_at = CURRENT_TIMESTAMP WHERE id = ?', ['Processed', refund.id]);
-        const order = queryOne('SELECT id, status, total, shipping_fee FROM orders WHERE id = ?', [refund.order_id]);
-        const refundTotals = queryOne("SELECT COALESCE(SUM(amount), 0) AS amount FROM refund_requests WHERE order_id = ? AND status = 'Processed'", [order.id]);
+        await run('UPDATE refund_requests SET status = ?, processed_at = CURRENT_TIMESTAMP WHERE id = ?', ['Processed', refund.id]);
+        const order = await queryOne('SELECT id, status, total, shipping_fee FROM orders WHERE id = ?', [refund.order_id]);
+        const refundTotals = await queryOne("SELECT COALESCE(SUM(amount), 0) AS amount FROM refund_requests WHERE order_id = ? AND status = 'Processed'", [order.id]);
         const refundableTotal = Math.max(0, Number(order.total) - Number(order.shipping_fee || 0));
         if (refundTotals.amount > 0) {
           const nextStatus = refundTotals.amount >= refundableTotal - 0.01 ? 'Refunded' : 'Partially Refunded';
-          run('UPDATE orders SET status = ? WHERE id = ?', [nextStatus, order.id]);
-          appendOrderStatus(order.id, order.status, nextStatus, currentUser.id, `Refund ${refund.id} marked processed. Verify the refund was sent through the payment provider.`);
+          await run('UPDATE orders SET status = ? WHERE id = ?', [nextStatus, order.id]);
+          await appendOrderStatus(order.id, order.status, nextStatus, currentUser.id, `Refund ${refund.id} marked processed. Verify the refund was sent through the payment provider.`);
         }
         const sync = await syncStoreRefundToAssistant({ orderId: refund.order_id, refundId: refund.id, status: 'Processed', amount: Number(refund.amount), note: refund.admin_note || '' });
         return sendJSON(res, 200, { success: true, refund_id: refund.id, status: 'Processed', order_status: refundTotals.amount >= refundableTotal - 0.01 ? 'Refunded' : 'Partially Refunded', ...(sync.synced ? { assistant_synced: true } : { assistant_sync_warning: sync.warning }) });
@@ -365,7 +366,7 @@ const server = http.createServer(async (req, res) => {
     // 1b. Customer authentication and account endpoints.
     if (pathname.startsWith('/api/auth/') || pathname.startsWith('/api/account/')) {
       const email = auth.emailValue;
-      const currentUser = auth.getCurrentUser(req);
+      const currentUser = await auth.getCurrentUser(req);
       const body = ['POST', 'PUT', 'PATCH'].includes(req.method) ? await parseBody(req) : {};
       const remoteKey = auth.ipFor(req);
 
@@ -385,13 +386,13 @@ const server = http.createServer(async (req, res) => {
         if (!name || !auth.validEmail(normalizedEmail) || password.length < 10 || password.length > 128) {
           return sendJSON(res, 400, { success: false, error: 'Enter your name, a valid email, and a password with at least 10 characters.' });
         }
-        const existing = queryOne('SELECT id, email_verified FROM users WHERE email = ?', [normalizedEmail]);
+        const existing = await queryOne('SELECT id, email_verified FROM users WHERE email = ?', [normalizedEmail]);
         if (existing && existing.email_verified) return sendJSON(res, 409, { success: false, error: 'An account already uses this email. Sign in or reset its password.' });
         const credentials = await auth.hashPassword(password);
         if (existing) {
-          run('UPDATE users SET name = ?, password_salt = ?, password_hash = ? WHERE id = ?', [name, credentials.salt, credentials.hash, existing.id]);
+          await run('UPDATE users SET name = ?, password_salt = ?, password_hash = ? WHERE id = ?', [name, credentials.salt, credentials.hash, existing.id]);
         } else {
-          run('INSERT INTO users (name, email, password_salt, password_hash, email_verified) VALUES (?, ?, ?, ?, 0)', [name, normalizedEmail, credentials.salt, credentials.hash]);
+          await run('INSERT INTO users (name, email, password_salt, password_hash, email_verified) VALUES (?, ?, ?, ?, 0)', [name, normalizedEmail, credentials.salt, credentials.hash]);
         }
         const result = await auth.issueCode(normalizedEmail, 'email_verification');
         if (!result.ok) return sendJSON(res, result.status, { success: false, error: result.error });
@@ -401,31 +402,31 @@ const server = http.createServer(async (req, res) => {
       if (req.method === 'POST' && pathname === '/api/auth/verify-email') {
         if (!auth.checkRateLimit(`verify:${remoteKey}`, 10, 10 * 60_000)) return sendJSON(res, 429, { success: false, error: 'Too many attempts. Try again later.' });
         const normalizedEmail = email(body.email);
-        const result = auth.consumeCode(normalizedEmail, 'email_verification', body.code);
+        const result = await auth.consumeCode(normalizedEmail, 'email_verification', body.code);
         if (!result.ok) return sendJSON(res, 400, { success: false, error: result.error });
-        const user = queryOne('SELECT * FROM users WHERE email = ?', [normalizedEmail]);
+        const user = await queryOne('SELECT * FROM users WHERE email = ?', [normalizedEmail]);
         if (!user) return sendJSON(res, 400, { success: false, error: 'The code is invalid or expired.' });
-        run('UPDATE users SET email_verified = 1 WHERE id = ?', [user.id]);
-        auth.createSession(user.id, res);
+        await run('UPDATE users SET email_verified = 1 WHERE id = ?', [user.id]);
+        await auth.createSession(user.id, res);
         return sendJSON(res, 200, { success: true, user: { ...auth.userView({ ...user, email_verified: 1 }) }, customer_token: auth.createCustomerToken(user.id) });
       }
 
       if (req.method === 'POST' && pathname === '/api/auth/login') {
         if (!auth.checkRateLimit(`login:${remoteKey}`, 10, 15 * 60_000)) return sendJSON(res, 429, { success: false, error: 'Too many sign-in attempts. Try again later.' });
         const normalizedEmail = email(body.email);
-        const user = queryOne('SELECT * FROM users WHERE email = ?', [normalizedEmail]);
+        const user = await queryOne('SELECT * FROM users WHERE email = ?', [normalizedEmail]);
         if (!user || typeof body.password !== 'string') return sendJSON(res, 401, { success: false, error: 'Email or password is incorrect.' });
         const candidate = await auth.hashPassword(body.password, user.password_salt);
         if (!auth.safeEqual(candidate.hash, user.password_hash)) return sendJSON(res, 401, { success: false, error: 'Email or password is incorrect.' });
         if (!user.email_verified) return sendJSON(res, 403, { success: false, error: 'Verify your email before signing in.' });
-        auth.createSession(user.id, res);
+        await auth.createSession(user.id, res);
         return sendJSON(res, 200, { success: true, user: auth.userView(user), customer_token: auth.createCustomerToken(user.id) });
       }
 
       if (req.method === 'POST' && pathname === '/api/auth/request-password-reset') {
         if (!auth.checkRateLimit(`reset-request:${remoteKey}`, 6, 15 * 60_000)) return sendJSON(res, 429, { success: false, error: 'Too many requests. Try again later.' });
         const normalizedEmail = email(body.email);
-        if (auth.validEmail(normalizedEmail) && queryOne('SELECT id FROM users WHERE email = ?', [normalizedEmail])) {
+        if (auth.validEmail(normalizedEmail) && await queryOne('SELECT id FROM users WHERE email = ?', [normalizedEmail])) {
           await auth.issueCode(normalizedEmail, 'password_reset');
         }
         return sendJSON(res, 200, { success: true, message: 'If an account exists for that email, a reset code has been sent.' });
@@ -437,13 +438,13 @@ const server = http.createServer(async (req, res) => {
         if (typeof body.password !== 'string' || body.password.length < 10 || body.password.length > 128) {
           return sendJSON(res, 400, { success: false, error: 'Choose a password with at least 10 characters.' });
         }
-        const result = auth.consumeCode(normalizedEmail, 'password_reset', body.code);
+        const result = await auth.consumeCode(normalizedEmail, 'password_reset', body.code);
         if (!result.ok) return sendJSON(res, 400, { success: false, error: result.error });
         const credentials = await auth.hashPassword(body.password);
-        const user = queryOne('SELECT id FROM users WHERE email = ?', [normalizedEmail]);
+        const user = await queryOne('SELECT id FROM users WHERE email = ?', [normalizedEmail]);
         if (!user) return sendJSON(res, 400, { success: false, error: 'The code is invalid or expired.' });
-        run('UPDATE users SET password_salt = ?, password_hash = ? WHERE id = ?', [credentials.salt, credentials.hash, user.id]);
-        run('DELETE FROM auth_sessions WHERE user_id = ?', [user.id]);
+        await run('UPDATE users SET password_salt = ?, password_hash = ? WHERE id = ?', [credentials.salt, credentials.hash, user.id]);
+        await run('DELETE FROM auth_sessions WHERE user_id = ?', [user.id]);
         auth.clearSessionCookie(res);
         return sendJSON(res, 200, { success: true, message: 'Password updated. Sign in with your new password.' });
       }
@@ -454,7 +455,7 @@ const server = http.createServer(async (req, res) => {
       }
 
       if (req.method === 'POST' && pathname === '/api/auth/logout') {
-        auth.revokeSession(req);
+        await auth.revokeSession(req);
         auth.clearSessionCookie(res);
         return sendJSON(res, 200, { success: true });
       }
@@ -463,29 +464,30 @@ const server = http.createServer(async (req, res) => {
         if (!currentUser) return sendJSON(res, 401, { success: false, error: 'Please sign in to view your account.' });
         const name = typeof body.name === 'string' ? body.name.trim().slice(0, 100) : '';
         if (!name) return sendJSON(res, 400, { success: false, error: 'Name is required.' });
-        run('UPDATE users SET name = ? WHERE id = ?', [name, currentUser.id]);
+        await run('UPDATE users SET name = ? WHERE id = ?', [name, currentUser.id]);
         return sendJSON(res, 200, { success: true, user: { ...currentUser, name } });
       }
 
       if (pathname === '/api/account/orders' && req.method === 'GET') {
         if (!currentUser) return sendJSON(res, 401, { success: false, error: 'Please sign in to view your orders.' });
-        const orders = queryAll('SELECT * FROM orders WHERE user_id = ? ORDER BY created_at DESC', [currentUser.id]);
-        return sendJSON(res, 200, { success: true, orders: orders.map(order => ({
+        const orders = await queryAll('SELECT * FROM orders WHERE user_id = ? ORDER BY created_at DESC', [currentUser.id]);
+        const hydratedOrders = await Promise.all(orders.map(async order => ({
           ...order,
           items: JSON.parse(order.items || '[]'),
-          history: queryAll('SELECT old_status, new_status, note, created_at FROM order_status_history WHERE order_id = ? ORDER BY id ASC', [order.id]),
-          refunds: queryAll('SELECT id, items, amount, reason, status, admin_note, created_at, reviewed_at, processed_at FROM refund_requests WHERE order_id = ? AND requested_by = ? ORDER BY created_at DESC', [order.id, currentUser.id]).map(refund => ({
+          history: await queryAll('SELECT old_status, new_status, note, created_at FROM order_status_history WHERE order_id = ? ORDER BY id ASC', [order.id]),
+          refunds: (await queryAll('SELECT id, items, amount, reason, status, admin_note, created_at, reviewed_at, processed_at FROM refund_requests WHERE order_id = ? AND requested_by = ? ORDER BY created_at DESC', [order.id, currentUser.id])).map(refund => ({
             ...refund,
             items: JSON.parse(refund.items || '[]')
           }))
-        })) });
+        })));
+        return sendJSON(res, 200, { success: true, orders: hydratedOrders });
       }
 
       const customerRefundMatch = pathname.match(/^\/api\/account\/orders\/([A-Za-z0-9-]+)\/refunds$/);
       if (req.method === 'POST' && customerRefundMatch) {
         if (!currentUser) return sendJSON(res, 401, { success: false, error: 'Please sign in to request a refund.' });
         if (!auth.checkRateLimit(`refund-request:${currentUser.id}`, 5, 60 * 60_000)) return sendJSON(res, 429, { success: false, error: 'Too many refund requests. Try again later.' });
-        const order = queryOne('SELECT * FROM orders WHERE id = ? AND user_id = ?', [customerRefundMatch[1], currentUser.id]);
+        const order = await queryOne('SELECT * FROM orders WHERE id = ? AND user_id = ?', [customerRefundMatch[1], currentUser.id]);
         if (!order) return sendJSON(res, 404, { success: false, error: 'Order not found.' });
         if (order.status === 'Refunded') return sendJSON(res, 409, { success: false, error: 'This order is already fully refunded.' });
         if (!['Delivered', 'Partially Refunded'].includes(order.status) || !order.delivered_at) return sendJSON(res, 409, { success: false, error: 'Returns can be requested after an order is delivered.' });
@@ -504,7 +506,7 @@ const server = http.createServer(async (req, res) => {
         }
 
         const reserved = new Map();
-        const priorRequests = queryAll("SELECT items FROM refund_requests WHERE order_id = ? AND status IN ('Requested', 'Approved', 'Processed')", [order.id]);
+        const priorRequests = await queryAll("SELECT items FROM refund_requests WHERE order_id = ? AND status IN ('Requested', 'Approved', 'Processed')", [order.id]);
         for (const refund of priorRequests) {
           for (const item of JSON.parse(refund.items || '[]')) reserved.set(Number(item.product_id), (reserved.get(Number(item.product_id)) || 0) + Number(item.quantity));
         }
@@ -518,7 +520,7 @@ const server = http.createServer(async (req, res) => {
         for (const [productId, quantity] of selected.entries()) {
           const purchased = purchasedItems.find(item => Number(item.id) === productId);
           if (!purchased) return sendJSON(res, 400, { success: false, error: 'A selected product is not part of this order.' });
-          const product = queryOne('SELECT category FROM products WHERE id = ?', [productId]);
+          const product = await queryOne('SELECT category FROM products WHERE id = ?', [productId]);
           if (isNonReturnableItem(purchased, product?.category)) return sendJSON(res, 409, { success: false, error: 'This product is not eligible for a return.' });
           const remaining = Number(purchased.quantity) - (reserved.get(productId) || 0);
           if (quantity > remaining) return sendJSON(res, 409, { success: false, error: `Only ${Math.max(0, remaining)} unit(s) of ${purchased.title} remain available for a refund request.` });
@@ -530,7 +532,7 @@ const server = http.createServer(async (req, res) => {
         }
         amount = Number(amount.toFixed(2));
         if (amount <= 0) return sendJSON(res, 400, { success: false, error: 'The selected products have no refundable amount.' });
-        const result = run('INSERT INTO refund_requests (order_id, requested_by, items, amount, reason) VALUES (?, ?, ?, ?, ?)', [
+        const result = await run('INSERT INTO refund_requests (order_id, requested_by, items, amount, reason) VALUES (?, ?, ?, ?, ?) RETURNING id', [
           order.id, currentUser.id, JSON.stringify(refundItems), amount, reason
         ]);
         return sendJSON(res, 201, { success: true, refund: { id: Number(result.lastInsertRowid), order_id: order.id, items: refundItems, amount, status: 'Requested' } });
@@ -541,8 +543,8 @@ const server = http.createServer(async (req, res) => {
 
     // 2. GET /api/categories - Categories with live product counts
     if (req.method === 'GET' && pathname === '/api/categories') {
-      const categories = queryAll('SELECT * FROM categories ORDER BY name ASC');
-      const counts = queryAll('SELECT category, count(*) as count FROM products WHERE is_active = 1 GROUP BY category');
+      const categories = await queryAll('SELECT * FROM categories ORDER BY name ASC');
+      const counts = await queryAll('SELECT category, count(*) as count FROM products WHERE is_active = 1 GROUP BY category');
       const countMap = {};
       counts.forEach(c => { countMap[c.category] = c.count; });
 
@@ -618,11 +620,11 @@ const server = http.createServer(async (req, res) => {
       else if (sort === 'title-asc') orderSQL = 'ORDER BY title ASC';
 
       // Count query
-      const countResult = queryOne(`SELECT COUNT(*) as total FROM products ${whereSQL}`, params);
+      const countResult = await queryOne(`SELECT COUNT(*) as total FROM products ${whereSQL}`, params);
       const total = countResult ? countResult.total : 0;
 
       // Select query with pagination
-      const products = queryAll(`SELECT * FROM products ${whereSQL} ${orderSQL} LIMIT ? OFFSET ?`, [...params, limit, offset]);
+      const products = await queryAll(`SELECT * FROM products ${whereSQL} ${orderSQL} LIMIT ? OFFSET ?`, [...params, limit, offset]);
 
       // Parse JSON fields
       const formatted = products.map(p => ({
@@ -635,7 +637,7 @@ const server = http.createServer(async (req, res) => {
       }));
 
       // Price range metadata for frontend slider
-      const priceMeta = queryOne(`SELECT MIN(price) as minPrice, MAX(price) as maxPrice FROM products WHERE is_active = 1`);
+      const priceMeta = await queryOne(`SELECT MIN(price) as minPrice, MAX(price) as maxPrice FROM products WHERE is_active = 1`);
 
       return sendJSON(res, 200, {
         success: true,
@@ -658,14 +660,14 @@ const server = http.createServer(async (req, res) => {
     const productMatch = pathname.match(/^\/api\/products\/(\d+)$/);
     if (req.method === 'GET' && productMatch) {
       const id = parseInt(productMatch[1]);
-      const product = queryOne('SELECT * FROM products WHERE id = ? AND is_active = 1', [id]);
+      const product = await queryOne('SELECT * FROM products WHERE id = ? AND is_active = 1', [id]);
 
       if (!product) {
         return sendJSON(res, 404, { success: false, error: 'Product not found' });
       }
 
-      const reviews = queryAll('SELECT * FROM reviews WHERE product_id = ? ORDER BY id DESC', [id]);
-      const related = queryAll('SELECT * FROM products WHERE category = ? AND id != ? AND is_active = 1 LIMIT 4', [product.category, id]);
+      const reviews = await queryAll('SELECT * FROM reviews WHERE product_id = ? ORDER BY id DESC', [id]);
+      const related = await queryAll('SELECT * FROM products WHERE category = ? AND id != ? AND is_active = 1 LIMIT 4', [product.category, id]);
 
       return sendJSON(res, 200, {
         success: true,
@@ -689,7 +691,7 @@ const server = http.createServer(async (req, res) => {
     // 5. GET /api/coupons/validate?code=...
     if (req.method === 'GET' && pathname === '/api/coupons/validate') {
       const code = (query.code || '').trim().toUpperCase();
-      const coupon = queryOne('SELECT * FROM coupons WHERE code = ? AND is_active = 1', [code]);
+      const coupon = await queryOne('SELECT * FROM coupons WHERE code = ? AND is_active = 1', [code]);
 
       if (!coupon) {
         return sendJSON(res, 404, { success: false, error: 'Invalid or expired coupon code' });
@@ -709,7 +711,7 @@ const server = http.createServer(async (req, res) => {
     // 6. POST /api/orders - Checkout & Order Creation
     if (req.method === 'POST' && pathname === '/api/orders') {
       const body = await parseBody(req);
-      const currentUser = auth.getCurrentUser(req);
+      const currentUser = await auth.getCurrentUser(req);
       const {
         customer_name,
         customer_email,
@@ -735,7 +737,7 @@ const server = http.createServer(async (req, res) => {
       const verifiedItems = [];
 
       for (const item of items) {
-        const prod = queryOne('SELECT id, title, price, stock, image FROM products WHERE id = ? AND is_active = 1', [item.id]);
+        const prod = await queryOne('SELECT id, title, price, stock, image FROM products WHERE id = ? AND is_active = 1', [item.id]);
         if (!prod) {
           return sendJSON(res, 400, { success: false, error: `Product with ID ${item.id} not found.` });
         }
@@ -760,7 +762,7 @@ const server = http.createServer(async (req, res) => {
       // Handle coupon discount
       let discount = 0;
       if (coupon_code) {
-        const coupon = queryOne('SELECT * FROM coupons WHERE code = ? AND is_active = 1', [coupon_code.trim().toUpperCase()]);
+        const coupon = await queryOne('SELECT * FROM coupons WHERE code = ? AND is_active = 1', [coupon_code.trim().toUpperCase()]);
         if (coupon && subtotal >= coupon.min_spend) {
           discount = (subtotal * coupon.discount_percent) / 100;
         }
@@ -779,7 +781,7 @@ const server = http.createServer(async (req, res) => {
       const orderId = `ORD-${dateStr}-${randDigits}`;
 
       // Insert Order into SQLite
-      run(`
+      await run(`
         INSERT INTO orders (
           id, customer_name, customer_email, customer_phone,
           shipping_address, city, postal_code, payment_method,
@@ -804,11 +806,11 @@ const server = http.createServer(async (req, res) => {
         'Processing',
         currentUser ? currentUser.id : null
       ]);
-      appendOrderStatus(orderId, null, 'Processing', currentUser ? currentUser.id : null, 'Order placed and awaiting staff review.');
+      await appendOrderStatus(orderId, null, 'Processing', currentUser ? currentUser.id : null, 'Order placed and awaiting staff review.');
 
       // Reduce product stock in SQLite
       for (const item of verifiedItems) {
-        run('UPDATE products SET stock = stock - ? WHERE id = ?', [item.quantity, item.id]);
+        await run('UPDATE products SET stock = stock - ? WHERE id = ?', [item.quantity, item.id]);
       }
 
       return sendJSON(res, 201, {
@@ -840,13 +842,13 @@ const server = http.createServer(async (req, res) => {
     const orderMatch = pathname.match(/^\/api\/orders\/([A-Za-z0-9-]+)$/);
     if (req.method === 'GET' && orderMatch) {
       const orderId = orderMatch[1];
-      const order = queryOne('SELECT * FROM orders WHERE id = ?', [orderId]);
+      const order = await queryOne('SELECT * FROM orders WHERE id = ?', [orderId]);
 
       if (!order) {
         return sendJSON(res, 404, { success: false, error: 'Order not found' });
       }
 
-      const currentUser = auth.getCurrentUser(req);
+      const currentUser = await auth.getCurrentUser(req);
       if (order.user_id && (!currentUser || currentUser.id !== order.user_id)) {
         return sendJSON(res, 404, { success: false, error: 'Order not found' });
       }
@@ -856,9 +858,9 @@ const server = http.createServer(async (req, res) => {
         order: {
           ...order,
           items: order.items ? JSON.parse(order.items) : [],
-          history: queryAll('SELECT old_status, new_status, note, created_at FROM order_status_history WHERE order_id = ? ORDER BY id ASC', [order.id]),
+          history: await queryAll('SELECT old_status, new_status, note, created_at FROM order_status_history WHERE order_id = ? ORDER BY id ASC', [order.id]),
           refunds: currentUser && order.user_id === currentUser.id
-            ? queryAll('SELECT id, items, amount, status, admin_note, created_at, reviewed_at, processed_at FROM refund_requests WHERE order_id = ? AND requested_by = ? ORDER BY created_at DESC', [order.id, currentUser.id]).map(refund => ({
+            ? (await queryAll('SELECT id, items, amount, status, admin_note, created_at, reviewed_at, processed_at FROM refund_requests WHERE order_id = ? AND requested_by = ? ORDER BY created_at DESC', [order.id, currentUser.id])).map(refund => ({
               ...refund,
               items: JSON.parse(refund.items || '[]')
             }))
@@ -877,7 +879,7 @@ const server = http.createServer(async (req, res) => {
       }
 
       const today = new Date().toISOString().slice(0, 10);
-      run('INSERT INTO reviews (product_id, author, rating, comment, date, verified) VALUES (?, ?, ?, ?, ?, 1)', [
+      await run('INSERT INTO reviews (product_id, author, rating, comment, date, verified) VALUES (?, ?, ?, ?, ?, 1)', [
         parseInt(product_id),
         author,
         parseInt(rating),
@@ -886,10 +888,10 @@ const server = http.createServer(async (req, res) => {
       ]);
 
       // Recalculate average rating for product
-      const stats = queryOne('SELECT COUNT(*) as count, AVG(rating) as avg_rating FROM reviews WHERE product_id = ?', [product_id]);
+      const stats = await queryOne('SELECT COUNT(*) as count, AVG(rating) as avg_rating FROM reviews WHERE product_id = ?', [product_id]);
       if (stats) {
         const roundedAvg = Math.round(stats.avg_rating * 10) / 10;
-        run('UPDATE products SET rating = ?, reviews_count = ? WHERE id = ?', [roundedAvg, stats.count, product_id]);
+        await run('UPDATE products SET rating = ?, reviews_count = ? WHERE id = ?', [roundedAvg, stats.count, product_id]);
       }
 
       return sendJSON(res, 201, {
@@ -901,9 +903,9 @@ const server = http.createServer(async (req, res) => {
 
     // 9. GET /api/stats - Store dashboard stats
     if (req.method === 'GET' && pathname === '/api/stats') {
-      const prodCount = queryOne('SELECT COUNT(*) as count FROM products WHERE is_active = 1');
-      const orderStats = queryOne('SELECT COUNT(*) as order_count, SUM(total) as revenue FROM orders');
-      const catCount = queryOne('SELECT COUNT(*) as count FROM categories');
+      const prodCount = await queryOne('SELECT COUNT(*) as count FROM products WHERE is_active = 1');
+      const orderStats = await queryOne('SELECT COUNT(*) as order_count, SUM(total) as revenue FROM orders');
+      const catCount = await queryOne('SELECT COUNT(*) as count FROM categories');
 
       return sendJSON(res, 200, {
         success: true,
@@ -940,6 +942,7 @@ const server = http.createServer(async (req, res) => {
 
 if (require.main === module) {
   async function start() {
+    await ready;
     const demoPassword = process.env.DEMO_ADMIN_PASSWORD;
     if (demoPassword && process.env.NODE_ENV === 'production') {
       throw new Error('DEMO_ADMIN_PASSWORD is only available outside production.');
@@ -953,14 +956,14 @@ if (require.main === module) {
         .map(value => value.trim().toLowerCase()).filter(Boolean);
       for (const email of adminEmails) {
         if (!auth.validEmail(email)) continue;
-        const existing = queryOne('SELECT id FROM users WHERE email = ?', [email]);
+        const existing = await queryOne('SELECT id FROM users WHERE email = ?', [email]);
         const credentials = await auth.hashPassword(demoPassword);
         if (existing) {
-          run('UPDATE users SET password_salt = ?, password_hash = ?, email_verified = 1 WHERE id = ?', [
+          await run('UPDATE users SET password_salt = ?, password_hash = ?, email_verified = 1 WHERE id = ?', [
             credentials.salt, credentials.hash, existing.id
           ]);
         } else {
-          run('INSERT INTO users (name, email, password_salt, password_hash, email_verified) VALUES (?, ?, ?, ?, 1)', [
+          await run('INSERT INTO users (name, email, password_salt, password_hash, email_verified) VALUES (?, ?, ?, ?, 1)', [
             'ApexStore Demo Admin', email, credentials.salt, credentials.hash
           ]);
         }
@@ -971,7 +974,7 @@ if (require.main === module) {
     server.listen(PORT, () => {
       console.log(`===============================================`);
       console.log(`ApexStore Backend REST API running on port ${PORT}`);
-      console.log(`SQLite Database: Connected & Initialized`);
+      console.log(`${process.env.DATABASE_ENGINE === 'postgres' ? 'PostgreSQL' : 'SQLite'} Database: Connected & Initialized`);
       console.log(`API URL: http://localhost:${PORT}/api`);
       console.log(`Products: http://localhost:${PORT}/api/products`);
       console.log(`===============================================`);

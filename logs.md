@@ -346,3 +346,26 @@
 - QA files touched: `README.md`, `backend/test/storefront.test.js`, and `logs.md`. No commit created.
 
 \n
+
+## [GCP-APEXSTORE-2026-11-15-01] - Prepare ApexStore for Cloud Run and Cloud SQL
+**Timestamp:** 2026-11-15 Asia/Calcutta
+**Status:** COMPLETED
+**Objective & Rationale ("Why"):**
+- Deploy ApexStore through Cloud Build and Cloud Run while keeping store data durable in the existing Cloud SQL PostgreSQL instance. The current backend uses local synchronous SQLite, which Cloud Run cannot persist reliably.
+
+**Architectural Boundaries & Modularity:**
+- Move the backend persistence boundary to an asynchronous PostgreSQL adapter for Cloud SQL. Keep SQLite only if it can remain a safe local-development option; production must require PostgreSQL.
+- Use a separate `apexstore` database and the dedicated `apexstore-app` role. No credentials are to be written to tracked files.
+
+**Files Touched:**
+- `README.md`, `GCP_DEPLOYMENT.md`, `cloudbuild.yaml`, backend SQLite/PostgreSQL adapters, async backend DB call sites, Docker ignore files, package manifests, and `logs.md`.
+
+**Verification & Quality Assurance:**
+- Commands executed: read-only source and deployment configuration inspection.
+- Tests: not run, per user instruction.
+
+**Git Commit:**
+- Not committed.
+
+**Next Planned Task (Awaiting User Permission):**
+- Deployment remains a user-controlled Cloud Console action; follow GCP_DEPLOYMENT.md after preparing the required secrets and IAM roles.
