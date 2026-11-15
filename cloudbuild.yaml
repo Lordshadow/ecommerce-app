@@ -134,6 +134,8 @@ steps:
     args:
       - -ceu
       - |
+        apt-get update
+        apt-get install -y --no-install-recommends python3
         gcloud run services describe ${_FRONTEND_SERVICE} --region=${_REGION} --format='value(status.url)' > /workspace/web-url
         WEB_URL="$$(cat /workspace/web-url)"
         gcloud run services update ${_BACKEND_SERVICE} --region=${_REGION} --update-env-vars="FRONTEND_ORIGIN=$$WEB_URL"
