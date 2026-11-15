@@ -89,7 +89,7 @@ steps:
     entrypoint: bash
     args:
       - -ceu
-      - gcloud run services describe assistant-api --region=${_REGION} --format='value(status.url)' > /workspace/support-api-url
+      - printf '%s' 'https://ai-assistant.cloud.run' > /workspace/support-api-url
 
   - id: build-web
     name: gcr.io/cloud-builders/docker
