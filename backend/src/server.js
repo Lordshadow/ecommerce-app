@@ -137,12 +137,18 @@ async function handleAssistantRefundReview(req, res, pathname) {
   }
   try {
     const providerResult = await sendRefund({ orderId, amount: Number(refund.amount), currency: order.currency || 'INR', items: JSON.parse(refund.items || '[]'), idempotencyKey: `store-refund-${refund.id}`, refundId: refund.id });
-    await run("UPDATE refund_requests SET status = 'Processed', admin_note = ?, reviewed_at = CURRENT_TIMESTAMP, processed_at = CURRENT_TIMESTAMP, processor_ref = ? WHERE id = ? AND status IN ('Requested', 'Approved')", [`Approved and processed from AI dashboard (${sourceRefundId}). ${String(body.note || '').slice(0, 500)}`, String(providerResult.id || providerResult.refund_id || ''), refund.id]);
+    const adminNote = providerResult.simulated === true
+      ? 'DEMO_REFUND_SIMULATED_NO_MONEY_MOVED; approved from AI dashboard.'
+      : `Approved and processed from AI dashboard (${sourceRefundId}). ${String(body.note || '').slice(0, 500)}`;
+    await run("UPDATE refund_requests SET status = 'Processed', admin_note = ?, reviewed_at = CURRENT_TIMESTAMP, processed_at = CURRENT_TIMESTAMP, processor_ref = ? WHERE id = ? AND status IN ('Requested', 'Approved')", [adminNote, String(providerResult.id || providerResult.refund_id || ''), refund.id]);
     const issued = await queryOne("SELECT COALESCE(SUM(amount), 0) AS amount FROM refund_requests WHERE order_id = ? AND status = 'Processed'", [orderId]);
     const nextStatus = issued.amount >= Math.max(0, Number(order.total) - Number(order.shipping_fee || 0)) - 0.01 ? 'Refunded' : 'Partially Refunded';
     await run('UPDATE orders SET status = ? WHERE id = ?', [nextStatus, orderId]);
-    await appendOrderStatus(orderId, order.status, nextStatus, null, `Refund ${refund.id} processed from AI dashboard.`);
-    return sendJSON(res, 200, { success: true, refund_id: refund.id, status: 'Processed', amount: Number(refund.amount), provider_ref: String(providerResult.id || providerResult.refund_id || ''), test_mode: providerResult.test_mode === true, money_moved: providerResult.money_moved === true });
+    await appendOrderStatus(orderId, order.status, nextStatus, null, providerResult.simulated === true
+      ? `Refund ${refund.id} simulated in demo mode; no payment was sent.`
+      : `Refund ${refund.id} processed from AI dashboard.`);
+    const simulation = providerResult.simulated === true || providerResult.test_mode === true;
+    return sendJSON(res, 200, { success: true, refund_id: refund.id, status: 'Processed', amount: Number(refund.amount), provider_ref: String(providerResult.id || providerResult.refund_id || ''), test_mode: simulation, money_moved: !simulation });
   } catch {
     sendJSON(res, 503, { success: false, error: 'Refund provider is unavailable; no status was changed.', code: 'TEMPORARILY_UNAVAILABLE' });
     return true;
@@ -360,12 +366,15 @@ const server = http.createServer(async (req, res) => {
           const order = await queryOne('SELECT id, currency FROM orders WHERE id = ?', [refund.order_id]);
           try {
             const providerResult = await sendRefund({ orderId: order.id, amount: Number(refund.amount), currency: order.currency || 'USD', items: JSON.parse(refund.items || '[]'), idempotencyKey: `staff-refund-${refund.id}`, refundId: refund.id });
-            await run("UPDATE refund_requests SET status = 'Processed', admin_note = ?, reviewed_by = ?, reviewed_at = CURRENT_TIMESTAMP, processed_at = CURRENT_TIMESTAMP, processor_ref = ? WHERE id = ?", [note, currentUser.id, String(providerResult.id || providerResult.refund_id || ''), refund.id]);
+            const adminNote = providerResult.simulated === true ? `DEMO_REFUND_SIMULATED_NO_MONEY_MOVED; ${note}` : note;
+            await run("UPDATE refund_requests SET status = 'Processed', admin_note = ?, reviewed_by = ?, reviewed_at = CURRENT_TIMESTAMP, processed_at = CURRENT_TIMESTAMP, processor_ref = ? WHERE id = ?", [adminNote, currentUser.id, String(providerResult.id || providerResult.refund_id || ''), refund.id]);
             const orderState = await queryOne('SELECT status, total, shipping_fee FROM orders WHERE id = ?', [order.id]);
             const issued = await queryOne("SELECT COALESCE(SUM(amount), 0) AS amount FROM refund_requests WHERE order_id = ? AND status = 'Processed'", [order.id]);
             const refundStatus = issued.amount >= Math.max(0, Number(orderState.total) - Number(orderState.shipping_fee || 0)) - 0.01 ? 'Refunded' : 'Partially Refunded';
             await run('UPDATE orders SET status = ? WHERE id = ?', [refundStatus, order.id]);
-            await appendOrderStatus(order.id, orderState.status, refundStatus, currentUser.id, `Refund ${refund.id} issued by payment provider.`);
+            await appendOrderStatus(order.id, orderState.status, refundStatus, currentUser.id, providerResult.simulated === true
+              ? `Refund ${refund.id} simulated in demo mode; no payment was sent.`
+              : `Refund ${refund.id} issued by payment provider.`);
           } catch (error) {
             return sendJSON(res, 503, { success: false, error: 'Refund provider is temporarily unavailable.', code: 'TEMPORARILY_UNAVAILABLE' });
           }

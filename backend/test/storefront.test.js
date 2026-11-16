@@ -177,20 +177,37 @@ test('assistant API enforces scopes, signed ownership, and refund idempotency', 
   const product = queryOne('SELECT id, price, title FROM products WHERE is_active = 1 LIMIT 1');
   const orderId = `TEST-${suffix}`;
   const highOrderId = `TEST-HIGH-${suffix}`;
+  const failedOrderId = `TEST-FAILED-${suffix}`;
   const expiredOrderId = `TEST-OLD-${suffix}`;
   run(`INSERT INTO orders (id, customer_name, customer_email, customer_phone, shipping_address, city, postal_code, payment_method, items, subtotal, discount, shipping_fee, tax, total, status, user_id, currency, delivered_at)
       VALUES (?, 'Assistant test', ?, '1234567890', 'Test', 'Test', '00000', 'card', ?, ?, 0, 0, 0, ?, 'Delivered', ?, 'INR', CURRENT_TIMESTAMP)`, [orderId, email, JSON.stringify([{ id: product.id, title: product.title, price: 1000, quantity: 1 }]), 1000, 1000, customerId]);
   run(`INSERT INTO orders (id, customer_name, customer_email, customer_phone, shipping_address, city, postal_code, payment_method, items, subtotal, discount, shipping_fee, tax, total, status, user_id, currency, delivered_at)
       VALUES (?, 'Assistant test', ?, '1234567890', 'Test', 'Test', '00000', 'card', ?, 3000, 0, 0, 0, 3000, 'Delivered', ?, 'INR', CURRENT_TIMESTAMP)`, [highOrderId, email, JSON.stringify([{ id: product.id, title: product.title, price: 3000, quantity: 1 }]), customerId]);
   run(`INSERT INTO orders (id, customer_name, customer_email, customer_phone, shipping_address, city, postal_code, payment_method, items, subtotal, discount, shipping_fee, tax, total, status, user_id, currency, delivered_at)
+      VALUES (?, 'Assistant test', ?, '1234567890', 'Test', 'Test', '00000', 'card', ?, 1000, 0, 0, 0, 1000, 'Delivered', ?, 'INR', CURRENT_TIMESTAMP)`, [failedOrderId, email, JSON.stringify([{ id: product.id, title: product.title, price: 1000, quantity: 1 }]), customerId]);
+  run(`INSERT INTO orders (id, customer_name, customer_email, customer_phone, shipping_address, city, postal_code, payment_method, items, subtotal, discount, shipping_fee, tax, total, status, user_id, currency, delivered_at)
       VALUES (?, 'Assistant test', ?, '1234567890', 'Test', 'Test', '00000', 'card', ?, 1000, 0, 0, 0, 1000, 'Delivered', ?, 'INR', datetime('now', '-31 days'))`, [expiredOrderId, email, JSON.stringify([{ id: product.id, title: product.title, price: 1000, quantity: 1 }]), customerId]);
   const customerToken = auth.createCustomerToken(customerId);
   const verificationToken = auth.createCustomerToken(customerId, { order_id: orderId, otp_verified: true });
   const highVerificationToken = auth.createCustomerToken(customerId, { order_id: highOrderId, otp_verified: true });
+  const failedVerificationToken = auth.createCustomerToken(customerId, { order_id: failedOrderId, otp_verified: true });
   const expiredVerificationToken = auth.createCustomerToken(customerId, { order_id: expiredOrderId, otp_verified: true });
+  const priorPaymentEnv = {
+    url: process.env.PAYMENT_REFUND_URL,
+    apiKey: process.env.PAYMENT_API_KEY,
+    mode: process.env.PAYMENT_REFUND_MODE,
+    demoEnabled: process.env.DEMO_PAYMENT_SIMULATOR_ENABLED,
+  };
+  const failedKey = `idem-failed-${suffix}`;
   const priorFetch = global.fetch; let providerCalls = 0;
   process.env.PAYMENT_REFUND_URL = 'https://processor.example/refunds'; process.env.PAYMENT_API_KEY = 'test-key';
-  global.fetch = async (_url, options) => { providerCalls += 1; assert.ok(options.headers['Idempotency-Key']); return { ok: true, json: async () => ({ id: 'provider-refund-1' }) }; };
+  delete process.env.PAYMENT_REFUND_MODE; delete process.env.DEMO_PAYMENT_SIMULATOR_ENABLED;
+  global.fetch = async (_url, options) => {
+    providerCalls += 1;
+    assert.ok(options.headers['Idempotency-Key']);
+    if (options.headers['Idempotency-Key'] === failedKey) return { ok: false, status: 503, json: async () => ({}) };
+    return { ok: true, json: async () => ({ id: 'provider-refund-1' }) };
+  };
   try {
     const noCredential = await invoke('GET', '/api/assistant/v1/products', undefined);
     assert.equal(noCredential.statusCode, 401);
@@ -239,6 +256,28 @@ test('assistant API enforces scopes, signed ownership, and refund idempotency', 
     assert.equal(replay.json.replayed, true);
     assert.equal(providerCalls, 1);
 
+    const failedBody = {
+      customer_id: customerId,
+      order_id: failedOrderId,
+      items: [{ product_id: product.id, quantity: 1 }],
+      reason: 'The item did not meet expectations.',
+      verification_token: failedVerificationToken,
+      idempotency_key: failedKey,
+    };
+    const failed = await invoke('POST', '/api/assistant/v1/refunds', failedBody, '', { authorization: `Bearer ${secret}` });
+    assert.equal(failed.statusCode, 503);
+    assert.equal(queryOne('SELECT status FROM refund_requests WHERE idempotency_key = ?', [failedKey]).status, 'Failed');
+
+    process.env.PAYMENT_REFUND_MODE = 'demo';
+    process.env.DEMO_PAYMENT_SIMULATOR_ENABLED = 'true';
+    delete process.env.PAYMENT_REFUND_URL; delete process.env.PAYMENT_API_KEY;
+    const simulatedRetry = await invoke('POST', '/api/assistant/v1/refunds', failedBody, '', { authorization: `Bearer ${secret}` });
+    assert.equal(simulatedRetry.statusCode, 200);
+    assert.equal(simulatedRetry.json.refund.status, 'Processed');
+    assert.match(simulatedRetry.json.refund.processor_ref, /^DEMO-/);
+    assert.match(simulatedRetry.json.refund.admin_note, /DEMO_REFUND_SIMULATED_NO_MONEY_MOVED/);
+    assert.equal(providerCalls, 2, 'demo retry is local and does not call an external payment provider');
+
     const high = await invoke('POST', '/api/assistant/v1/refunds', {
       customer_id: customerId,
       order_id: highOrderId,
@@ -249,7 +288,7 @@ test('assistant API enforces scopes, signed ownership, and refund idempotency', 
     }, '', { authorization: `Bearer ${secret}` });
     assert.equal(high.statusCode, 201);
     assert.equal(high.json.refund.status, 'Requested');
-    assert.equal(providerCalls, 1, 'over-limit requests wait for staff and do not call the provider');
+    assert.equal(providerCalls, 2, 'over-limit requests wait for staff and do not call the provider');
 
     const expired = await invoke('POST', '/api/assistant/v1/refunds', {
       customer_id: customerId,
@@ -260,15 +299,21 @@ test('assistant API enforces scopes, signed ownership, and refund idempotency', 
       idempotency_key: `idem-expired-${suffix}`,
     }, '', { authorization: `Bearer ${secret}` });
     assert.equal(expired.statusCode, 409);
-    assert.equal(providerCalls, 1);
+    assert.equal(providerCalls, 2);
   } finally {
     global.fetch = priorFetch;
-    delete process.env.PAYMENT_REFUND_URL; delete process.env.PAYMENT_API_KEY; delete process.env.SHOP_API_KEYS;
+    if (priorPaymentEnv.url === undefined) delete process.env.PAYMENT_REFUND_URL; else process.env.PAYMENT_REFUND_URL = priorPaymentEnv.url;
+    if (priorPaymentEnv.apiKey === undefined) delete process.env.PAYMENT_API_KEY; else process.env.PAYMENT_API_KEY = priorPaymentEnv.apiKey;
+    if (priorPaymentEnv.mode === undefined) delete process.env.PAYMENT_REFUND_MODE; else process.env.PAYMENT_REFUND_MODE = priorPaymentEnv.mode;
+    if (priorPaymentEnv.demoEnabled === undefined) delete process.env.DEMO_PAYMENT_SIMULATOR_ENABLED; else process.env.DEMO_PAYMENT_SIMULATOR_ENABLED = priorPaymentEnv.demoEnabled;
+    delete process.env.SHOP_API_KEYS;
     run('DELETE FROM refund_requests WHERE order_id = ?', [orderId]);
     run('DELETE FROM refund_requests WHERE order_id = ?', [highOrderId]);
+    run('DELETE FROM refund_requests WHERE order_id = ?', [failedOrderId]);
     run('DELETE FROM refund_requests WHERE order_id = ?', [expiredOrderId]);
     run('DELETE FROM orders WHERE id = ?', [orderId]);
     run('DELETE FROM orders WHERE id = ?', [highOrderId]);
+    run('DELETE FROM orders WHERE id = ?', [failedOrderId]);
     run('DELETE FROM orders WHERE id = ?', [expiredOrderId]);
     run('DELETE FROM users WHERE id = ?', [customerId]);
   }

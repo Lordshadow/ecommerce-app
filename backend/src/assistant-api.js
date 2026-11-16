@@ -5,7 +5,13 @@ const { sendRefund } = require('./payment-provider');
 const { isReturnWindowOpen, isNonReturnableItem } = require('./refund-policy');
 
 const READ_SCOPES = new Set(['catalog:read', 'orders:read', 'refunds:read']);
+const DEMO_REFUND_ADMIN_NOTE = 'DEMO_REFUND_SIMULATED_NO_MONEY_MOVED';
 const buckets = new Map();
+
+function isDemoPaymentModeEnabled() {
+  return String(process.env.PAYMENT_REFUND_MODE || '').trim().toLowerCase() === 'demo' &&
+    process.env.DEMO_PAYMENT_SIMULATOR_ENABLED === 'true';
+}
 
 function json(res, status, code, data = {}) {
   res.writeHead(status, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
@@ -115,6 +121,35 @@ async function issueRefund({ order, customerId, requestedItems, key, reason, act
   const previous = await queryOne('SELECT * FROM refund_requests WHERE idempotency_key = ?', [key]);
   if (previous) {
     if (previous.order_id !== order.id) return { error: 'NOT_ELIGIBLE' };
+    // Only explicit demo mode may turn a prior failed request into a simulated
+    // success. External payment failures remain idempotent and require review.
+    if (previous.status === 'Failed' && isDemoPaymentModeEnabled()) {
+      const previousItems = parseItems(previous.items);
+      const check = await eligibility(order, previousItems);
+      if (!check.eligible || Math.abs(Number(check.amount) - Number(previous.amount)) > 0.01) {
+        return { refund: previous, replay: true };
+      }
+      const providerResult = await sendRefund({
+        orderId: order.id,
+        amount: Number(previous.amount),
+        currency: order.currency,
+        items: previousItems,
+        idempotencyKey: key,
+        refundId: previous.id,
+      });
+      if (providerResult.simulated !== true) throw new Error('demo_simulator_did_not_confirm_simulation');
+      await run("UPDATE refund_requests SET status = 'Processed', processed_at = CURRENT_TIMESTAMP, processor_ref = ?, admin_note = ? WHERE id = ? AND status = 'Failed'", [
+        String(providerResult.id),
+        `${DEMO_REFUND_ADMIN_NOTE}; retried after prior processor failure.`,
+        previous.id,
+      ]);
+      const currentOrder = await queryOne('SELECT status, total, shipping_fee FROM orders WHERE id = ?', [order.id]);
+      const issued = await queryOne("SELECT COALESCE(SUM(amount), 0) AS amount FROM refund_requests WHERE order_id = ? AND status = 'Processed'", [order.id]);
+      const nextStatus = issued.amount >= Math.max(0, Number(currentOrder.total) - Number(currentOrder.shipping_fee || 0)) - 0.01 ? 'Refunded' : 'Partially Refunded';
+      await run('UPDATE orders SET status = ? WHERE id = ?', [nextStatus, order.id]);
+      await run('INSERT INTO order_status_history (order_id, old_status, new_status, changed_by, note) VALUES (?, ?, ?, NULL, ?)', [order.id, currentOrder.status, nextStatus, `Refund ${previous.id} simulated in demo mode; no payment was sent.`]);
+      return { refund: await queryOne('SELECT * FROM refund_requests WHERE id = ?', [previous.id]), replay: true };
+    }
     return { refund: previous, replay: true };
   }
   const check = await eligibility(order, requestedItems);
@@ -136,12 +171,16 @@ async function issueRefund({ order, customerId, requestedItems, key, reason, act
   }
   try {
     const result = await sendRefund({ orderId: order.id, amount: check.amount, currency: order.currency, items: check.items, idempotencyKey: key, refundId });
-    await run("UPDATE refund_requests SET status = 'Processed', processed_at = CURRENT_TIMESTAMP, processor_ref = ? WHERE id = ?", [String(result.id || result.refund_id || ''), refundId]);
+    const adminNote = result.simulated === true ? DEMO_REFUND_ADMIN_NOTE : null;
+    await run("UPDATE refund_requests SET status = 'Processed', processed_at = CURRENT_TIMESTAMP, processor_ref = ?, admin_note = ? WHERE id = ?", [String(result.id || result.refund_id || ''), adminNote, refundId]);
     const currentOrder = await queryOne('SELECT status, total, shipping_fee FROM orders WHERE id = ?', [order.id]);
     const issued = await queryOne("SELECT COALESCE(SUM(amount), 0) AS amount FROM refund_requests WHERE order_id = ? AND status = 'Processed'", [order.id]);
     const nextStatus = issued.amount >= Math.max(0, Number(currentOrder.total) - Number(currentOrder.shipping_fee || 0)) - 0.01 ? 'Refunded' : 'Partially Refunded';
     await run('UPDATE orders SET status = ? WHERE id = ?', [nextStatus, order.id]);
-    await run('INSERT INTO order_status_history (order_id, old_status, new_status, changed_by, note) VALUES (?, ?, ?, NULL, ?)', [order.id, currentOrder.status, nextStatus, `Refund ${refundId} issued by payment provider.`]);
+    const historyNote = result.simulated === true
+      ? `Refund ${refundId} simulated in demo mode; no payment was sent.`
+      : `Refund ${refundId} issued by payment provider.`;
+    await run('INSERT INTO order_status_history (order_id, old_status, new_status, changed_by, note) VALUES (?, ?, ?, NULL, ?)', [order.id, currentOrder.status, nextStatus, historyNote]);
     const refund = await queryOne('SELECT * FROM refund_requests WHERE id = ?', [refundId]);
     return { refund, replay: false };
   } catch (error) {

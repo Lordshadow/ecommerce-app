@@ -369,3 +369,27 @@
 
 **Next Planned Task (Awaiting User Permission):**
 - Deployment remains a user-controlled Cloud Console action; follow GCP_DEPLOYMENT.md after preparing the required secrets and IAM roles.
+## REFUND-DEMO-20261116 - Explicit demo refund simulator and truthful assistant replies
+**Timestamp:** 2026-11-16 13:14:02 Asia/Calcutta
+**Status:** VERIFIED (focused checks passed; full-suite caveat below)
+**Objective & Rationale ("Why"):**
+- Enable demo refund requests when no real processor is configured, without making payment calls; ensure users are told that simulated refunds do not move money.
+
+**Architectural Boundaries & Modularity:**
+- Storefront simulator is opt-in through `PAYMENT_REFUND_MODE=demo` and `DEMO_PAYMENT_SIMULATOR_ENABLED=true`; external mode behavior remains unchanged.
+- Demo status is marked on refund records and carried through the assistant domain, tool response, and final customer reply.
+
+**Files Touched:**
+- `backend/src/payment-provider.js`, `backend/src/assistant-api.js`, `backend/src/server.js`, `backend/test/storefront.test.js` (local no-network simulator, safe retry of prior failed refunds, and explicit status markers).
+- `support-assistant/core/models.py`, `support-assistant/adapters/postgres/refund_repository.py`, `support-assistant/services/mcp_servers/refund_server.py`, `support-assistant/services/worker/llm_client.py`, `support-assistant/services/worker/orchestrator.py` (propagate demo flag and prevent false claims about credited money).
+- `support-assistant/tests/test_storefront_refund_integration.py`, `support-assistant/tests/test_worker_orchestrator.py` (regression coverage).
+
+**Verification & Quality Assurance:**
+- Commands executed: focused Node refund tests (3 passed); targeted Python demo-refund marker test (passed); targeted worker orchestration test (passed); JS syntax checks, Python compileall, and `git diff --check` (passed).
+- Full Node suite has a separate fixture/catalog count mismatch (`194 !== 12`). Full Python test-module run stalled in an existing storefront integration test; targeted new tests passed.
+
+**Git Commit:**
+- Not committed. Workspace contains unrelated staged changes; none were included in this task.
+
+**Next Planned Task (Awaiting User Permission):**
+- [ ] Deploy the updated ApexStore API and assistant, then set the two explicit demo mode environment variables on `apexstore-api`.
