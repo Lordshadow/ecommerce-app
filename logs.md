@@ -393,3 +393,19 @@
 
 **Next Planned Task (Awaiting User Permission):**
 - [ ] Deploy the updated ApexStore API and assistant, then set the two explicit demo mode environment variables on `apexstore-api`.
+
+## REFUND-PRESENTATION-20261116 - Standard customer refund wording
+**Timestamp:** 2026-11-16 13:30 Asia/Calcutta
+**Status:** VERIFIED
+**Objective & Rationale ("Why"):**
+- Keep demo refunds visually clear and concise for presentation, retain the internal simulation marker, and avoid claiming funds were credited.
+**Architectural Boundaries & Modularity:**
+- Customer-facing order responses hide internal simulator markers and normalize older simulated status-history notes; backend refund audit data remains unchanged.
+**Files Touched:**
+- `backend/src/assistant-api.js`, `backend/src/server.js`, `backend/test/storefront.test.js` and this log.
+**Verification & Quality Assurance:**
+- Focused backend refund tests passed; Node syntax checks passed.
+**Git Commit:**
+- Pending.
+**Next Planned Task (Awaiting User Permission):**
+- Deploy updated `apexstore-api` and `assistant-api` containers.

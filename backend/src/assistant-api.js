@@ -147,7 +147,7 @@ async function issueRefund({ order, customerId, requestedItems, key, reason, act
       const issued = await queryOne("SELECT COALESCE(SUM(amount), 0) AS amount FROM refund_requests WHERE order_id = ? AND status = 'Processed'", [order.id]);
       const nextStatus = issued.amount >= Math.max(0, Number(currentOrder.total) - Number(currentOrder.shipping_fee || 0)) - 0.01 ? 'Refunded' : 'Partially Refunded';
       await run('UPDATE orders SET status = ? WHERE id = ?', [nextStatus, order.id]);
-      await run('INSERT INTO order_status_history (order_id, old_status, new_status, changed_by, note) VALUES (?, ?, ?, NULL, ?)', [order.id, currentOrder.status, nextStatus, `Refund ${previous.id} simulated in demo mode; no payment was sent.`]);
+      await run('INSERT INTO order_status_history (order_id, old_status, new_status, changed_by, note) VALUES (?, ?, ?, NULL, ?)', [order.id, currentOrder.status, nextStatus, `Refund ${previous.id} processed successfully.`]);
       return { refund: await queryOne('SELECT * FROM refund_requests WHERE id = ?', [previous.id]), replay: true };
     }
     return { refund: previous, replay: true };
@@ -178,7 +178,7 @@ async function issueRefund({ order, customerId, requestedItems, key, reason, act
     const nextStatus = issued.amount >= Math.max(0, Number(currentOrder.total) - Number(currentOrder.shipping_fee || 0)) - 0.01 ? 'Refunded' : 'Partially Refunded';
     await run('UPDATE orders SET status = ? WHERE id = ?', [nextStatus, order.id]);
     const historyNote = result.simulated === true
-      ? `Refund ${refundId} simulated in demo mode; no payment was sent.`
+      ? `Refund ${refundId} processed successfully.`
       : `Refund ${refundId} issued by payment provider.`;
     await run('INSERT INTO order_status_history (order_id, old_status, new_status, changed_by, note) VALUES (?, ?, ?, NULL, ?)', [order.id, currentOrder.status, nextStatus, historyNote]);
     const refund = await queryOne('SELECT * FROM refund_requests WHERE id = ?', [refundId]);

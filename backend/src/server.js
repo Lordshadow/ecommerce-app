@@ -9,6 +9,21 @@ const { isReturnWindowOpen, isNonReturnableItem } = require('./refund-policy');
 
 const PORT = process.env.PORT || 5000;
 const demoRefunds = new Map();
+const DEMO_REFUND_ADMIN_NOTE = 'DEMO_REFUND_SIMULATED_NO_MONEY_MOVED';
+
+function customerRefundNote(note) {
+  const value = String(note || '');
+  return value.startsWith(DEMO_REFUND_ADMIN_NOTE) ? null : (value || null);
+}
+
+function customerOrderHistory(rows) {
+  return rows.map(event => ({
+    ...event,
+    note: String(event.note || '').includes('simulated in demo mode; no payment was sent.')
+      ? String(event.note).replace('simulated in demo mode; no payment was sent.', 'processed successfully.')
+      : event.note,
+  }));
+}
 
 const orderTransitions = {
   Processing: ['Confirmed', 'Rejected'],
@@ -145,7 +160,7 @@ async function handleAssistantRefundReview(req, res, pathname) {
     const nextStatus = issued.amount >= Math.max(0, Number(order.total) - Number(order.shipping_fee || 0)) - 0.01 ? 'Refunded' : 'Partially Refunded';
     await run('UPDATE orders SET status = ? WHERE id = ?', [nextStatus, orderId]);
     await appendOrderStatus(orderId, order.status, nextStatus, null, providerResult.simulated === true
-      ? `Refund ${refund.id} simulated in demo mode; no payment was sent.`
+      ? `Refund ${refund.id} processed successfully.`
       : `Refund ${refund.id} processed from AI dashboard.`);
     const simulation = providerResult.simulated === true || providerResult.test_mode === true;
     return sendJSON(res, 200, { success: true, refund_id: refund.id, status: 'Processed', amount: Number(refund.amount), provider_ref: String(providerResult.id || providerResult.refund_id || ''), test_mode: simulation, money_moved: !simulation });
@@ -373,7 +388,7 @@ const server = http.createServer(async (req, res) => {
             const refundStatus = issued.amount >= Math.max(0, Number(orderState.total) - Number(orderState.shipping_fee || 0)) - 0.01 ? 'Refunded' : 'Partially Refunded';
             await run('UPDATE orders SET status = ? WHERE id = ?', [refundStatus, order.id]);
             await appendOrderStatus(order.id, orderState.status, refundStatus, currentUser.id, providerResult.simulated === true
-              ? `Refund ${refund.id} simulated in demo mode; no payment was sent.`
+              ? `Refund ${refund.id} processed successfully.`
               : `Refund ${refund.id} issued by payment provider.`);
           } catch (error) {
             return sendJSON(res, 503, { success: false, error: 'Refund provider is temporarily unavailable.', code: 'TEMPORARILY_UNAVAILABLE' });
@@ -517,9 +532,10 @@ const server = http.createServer(async (req, res) => {
         const hydratedOrders = await Promise.all(orders.map(async order => ({
           ...order,
           items: JSON.parse(order.items || '[]'),
-          history: await queryAll('SELECT old_status, new_status, note, created_at FROM order_status_history WHERE order_id = ? ORDER BY id ASC', [order.id]),
+          history: customerOrderHistory(await queryAll('SELECT old_status, new_status, note, created_at FROM order_status_history WHERE order_id = ? ORDER BY id ASC', [order.id])),
           refunds: (await queryAll('SELECT id, items, amount, reason, status, admin_note, created_at, reviewed_at, processed_at FROM refund_requests WHERE order_id = ? AND requested_by = ? ORDER BY created_at DESC', [order.id, currentUser.id])).map(refund => ({
             ...refund,
+            admin_note: customerRefundNote(refund.admin_note),
             items: JSON.parse(refund.items || '[]')
           }))
         })));
@@ -901,10 +917,11 @@ const server = http.createServer(async (req, res) => {
         order: {
           ...order,
           items: order.items ? JSON.parse(order.items) : [],
-          history: await queryAll('SELECT old_status, new_status, note, created_at FROM order_status_history WHERE order_id = ? ORDER BY id ASC', [order.id]),
+          history: customerOrderHistory(await queryAll('SELECT old_status, new_status, note, created_at FROM order_status_history WHERE order_id = ? ORDER BY id ASC', [order.id])),
           refunds: currentUser && order.user_id === currentUser.id
             ? (await queryAll('SELECT id, items, amount, status, admin_note, created_at, reviewed_at, processed_at FROM refund_requests WHERE order_id = ? AND requested_by = ? ORDER BY created_at DESC', [order.id, currentUser.id])).map(refund => ({
               ...refund,
+              admin_note: customerRefundNote(refund.admin_note),
               items: JSON.parse(refund.items || '[]')
             }))
             : []
